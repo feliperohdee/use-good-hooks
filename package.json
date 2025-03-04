@@ -41,7 +41,6 @@
 	},
 	"scripts": {
 		"build": "yarn lint && vite build --mode export",
-		"dev": "vite",
 		"lint": "prettier --write . && eslint .",
 		"npm-publish": "yarn test --run && yarn build && yarn version --patch --no-git-tag-version && yarn publish --non-interactive",
 		"test": "vitest"
