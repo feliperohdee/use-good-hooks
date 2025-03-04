@@ -17,32 +17,41 @@ export default defineConfig(env => {
 		config.build = {
 			copyPublicDir: false,
 			lib: {
-				entry: './src/index-export.ts',
-				fileName: 'index',
+				entry: './src/index.ts',
 				formats: ['es']
 			},
 			rollupOptions: {
 				external: [
-					'lodash',
+					'lodash/debounce',
+					'lodash/isEmpty',
+					'lodash/isEqual',
+					'lodash/isFunction',
+					'lodash/isMap',
+					'lodash/isNumber',
+					'lodash/isSet',
+					'lodash/merge',
+					'lodash/omit',
+					'lodash/omitBy',
+					'lodash/pick',
+					'lodash/pickBy',
+					'lodash/size',
+					'lodash/throttle',
 					'react-dom',
 					'react',
 					'react/jsxRuntime',
 					'use-json',
 					'use-qs'
-				]
+				],
+				output: {
+					entryFileNames: '[name].js'
+				}
 			}
 		};
 
 		config.plugins = [
 			...config.plugins!,
 			dts({
-				copyDtsFiles: true,
-				exclude: ['**/*.spec.*'],
-				include: [
-					'./src/hooks/*',
-					'./src/types.ts',
-					'./src/index-export.ts'
-				],
+				include: ['./src/*'],
 				rollupTypes: true,
 				tsconfigPath: './tsconfig.app.json'
 			})

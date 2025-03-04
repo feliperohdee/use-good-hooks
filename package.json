@@ -1,4 +1,5 @@
 {
+	"name": "use-good-hooks",
 	"dependencies": {
 		"use-json": "^1.0.0",
 		"use-qs": "^1.0.4"
@@ -32,8 +33,7 @@
 	"files": [
 		"dist"
 	],
-	"main": "dist/index.js",
-	"name": "use-good-hooks",
+	"main": "./dist/index.js",
 	"peerDependencies": {
 		"lodash": "^4.17.21",
 		"react": "^19.0.0",
@@ -46,5 +46,5 @@
 		"npm-publish": "yarn test --run && yarn build && yarn version --patch --no-git-tag-version && yarn publish --non-interactive",
 		"test": "vitest"
 	},
-	"version": "1.0.3"
+	"version": "1.0.8"
 }
