@@ -35,7 +35,7 @@ Debounces value changes to prevent rapid updates. Useful for search inputs, form
 ```typescript
 import { useDebounce } from 'use-good-hooks';
 
-function SearchComponent() {
+const SearchComponent = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 500); // 500ms delay
 
@@ -54,7 +54,7 @@ function SearchComponent() {
       placeholder="Search..."
     />
   );
-}
+};
 ```
 
 #### Parameters
@@ -73,7 +73,7 @@ Limits the rate at which a value can update. Useful for scroll events, window re
 ```typescript
 import { useThrottle } from 'use-good-hooks';
 
-function ScrollTracker() {
+const ScrollTracker = () => {
   const [scrollY, setScrollY] = useState(0);
   const throttledScrollY = useThrottle(scrollY, 200); // 200ms throttle
 
@@ -87,7 +87,7 @@ function ScrollTracker() {
   }, []);
 
   return <div>Throttled scroll position: {throttledScrollY}px</div>;
-}
+};
 ```
 
 #### Parameters
@@ -106,7 +106,7 @@ Captures the previous value of a state or prop. Useful for comparing changes bet
 ```typescript
 import { usePrev } from 'use-good-hooks';
 
-function Counter({ count }) {
+const Counter = ({ count }) => {
   const prevCount = usePrev(count);
 
   return (
@@ -116,7 +116,7 @@ function Counter({ count }) {
       <p>Direction: {count > prevCount ? 'Increasing' : count < prevCount ? 'Decreasing' : 'No change'}</p>
     </div>
   );
-}
+};
 ```
 
 #### Parameters
@@ -134,7 +134,7 @@ Detects distinct changes in values with support for deep comparison and custom e
 ```typescript
 import { useDistinct } from 'use-good-hooks';
 
-function UserProfileForm({ user }) {
+const UserProfileForm = ({ user }) => {
   const { distinct, value, prevValue } = useDistinct(user, { deep: true });
 
   useEffect(() => {
@@ -151,7 +151,7 @@ function UserProfileForm({ user }) {
       {/* Form inputs */}
     </div>
   );
-}
+};
 ```
 
 #### Parameters
@@ -176,7 +176,7 @@ Persists state to localStorage or sessionStorage with automatic serialization/de
 ```typescript
 import { useStorageState } from 'use-good-hooks';
 
-function ThemePreferences() {
+const ThemePreferences = () => {
   const [preferences, setPreferences, { removeKey }] = useStorageState('theme-prefs', {
     darkMode: false,
     fontSize: 'medium',
@@ -198,7 +198,7 @@ function ThemePreferences() {
       <button onClick={removeKey}>Reset to Defaults</button>
     </div>
   );
-}
+};
 ```
 
 #### Parameters
@@ -227,7 +227,7 @@ Synchronizes state with URL query parameters. Great for shareable UI states, fil
 ```typescript
 import { useUrlState } from 'use-good-hooks';
 
-function ProductFilter() {
+const ProductFilter = () => {
   const [filters, setFilters] = useUrlState({
     category: '',
     minPrice: 0,
@@ -252,7 +252,7 @@ function ProductFilter() {
       {/* More filter controls */}
     </div>
   );
-}
+};
 ```
 
 #### Parameters
