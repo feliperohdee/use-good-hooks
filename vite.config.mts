@@ -52,8 +52,7 @@ export default defineConfig(env => {
 			...config.plugins!,
 			dts({
 				include: ['./src/*'],
-				rollupTypes: true,
-				tsconfigPath: './tsconfig.app.json'
+				rollupTypes: true
 			})
 		];
 	}
