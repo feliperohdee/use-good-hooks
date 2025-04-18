@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
 	{
-		ignores: ['dist', 'src/components/ui']
+		ignores: ['coverage', 'dist', 'src/components/ui']
 	},
 	{
 		extends: [js.configs.recommended, ...tseslint.configs.recommended],
@@ -22,7 +22,8 @@ export default tseslint.config(
 		rules: {
 			...reactHooks.configs.recommended.rules,
 			'@typescript-eslint/no-explicit-any': 'off',
-			'@typescript-eslint/ban-ts-comment': 'off'
+			'@typescript-eslint/ban-ts-comment': 'off',
+			'prefer-const': 'off'
 		}
 	}
 );
