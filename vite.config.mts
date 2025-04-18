@@ -51,7 +51,7 @@ export default defineConfig(env => {
 		config.plugins = [
 			...config.plugins!,
 			dts({
-				include: ['./src/*'],
+				include: ['./src/*', './src/hooks/*'],
 				rollupTypes: true
 			})
 		];
