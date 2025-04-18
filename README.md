@@ -274,6 +274,94 @@ const ProductFilter = () => {
     - State value
     - State setter function
 
+### `useGlobalState` and `createGlobalState`
+
+Creates and manages global state that can be shared across components with automatic synchronization.
+
+```typescript
+import { createGlobalState, useGlobalState } from 'use-good-hooks';
+
+// Create a global state instance (typically in a separate file)
+const counterState = createGlobalState({ count: 0 });
+
+// Component A
+const CounterDisplay = () => {
+  const [counter, setCounter] = useGlobalState(counterState);
+
+  return (
+    <div>
+      <p>Count: {counter.count}</p>
+      <button onClick={() => setCounter({ count: counter.count + 1 })}>
+        Increment
+      </button>
+    </div>
+  );
+};
+
+// Component B (in a different part of your app)
+const CounterActions = () => {
+  const [counter, setCounter] = useGlobalState(counterState);
+
+  return (
+    <div>
+      <button onClick={() => setCounter({ count: 0 })}>
+        Reset Count
+      </button>
+      <button onClick={() => setCounter(prev => ({ count: prev.count + 5 }))}>
+        Add 5
+      </button>
+    </div>
+  );
+};
+```
+
+#### Usage
+
+1. First, create a global state store:
+
+```typescript
+// state/counter.ts
+import { createGlobalState } from 'use-good-hooks';
+
+export const counterState = createGlobalState({ count: 0 });
+```
+
+2. Then use it in any component:
+
+```typescript
+import { useGlobalState } from 'use-good-hooks';
+import { counterState } from './state/counter';
+
+const MyComponent = () => {
+	const [counter, setCounter] = useGlobalState(counterState);
+	// ...
+};
+```
+
+#### `createGlobalState` Parameters
+
+- `initialState`: The initial state value
+
+#### `createGlobalState` Returns
+
+- Array with:
+    - `state`: The current state
+    - `setState`: Function to update state
+    - `store`: Object with utility methods:
+        - `getState()`: Function to get current state
+        - `subscribe(callback)`: Subscribe to state changes
+        - `resetState()`: Reset to initial state
+
+#### `useGlobalState` Parameters
+
+- `globalState`: The global state created with `createGlobalState`
+
+#### `useGlobalState` Returns
+
+- Array with:
+    - `state`: The component's local copy of the state
+    - `setState`: Function to update global state (accepts new value or update function)
+
 ## 🧪 Running Tests
 
 This library is thoroughly tested with Vitest and React Testing Library. To run the tests:
