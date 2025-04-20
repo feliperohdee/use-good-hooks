@@ -1,7 +1,7 @@
 import js from '@eslint/js';
 import globals from 'globals';
-import reactHooks from 'eslint-plugin-react-hooks';
-import reactRefresh from 'eslint-plugin-react-refresh';
+import reactHooksPlugin from 'eslint-plugin-react-hooks';
+import reactRefreshPlugin from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
@@ -16,11 +16,11 @@ export default tseslint.config(
 			globals: globals.browser
 		},
 		plugins: {
-			'react-hooks': reactHooks,
-			'react-refresh': reactRefresh
+			'react-hooks': reactHooksPlugin,
+			'react-refresh': reactRefreshPlugin
 		},
 		rules: {
-			...reactHooks.configs.recommended.rules,
+			...reactHooksPlugin.configs.recommended.rules,
 			'@typescript-eslint/no-explicit-any': 'off',
 			'@typescript-eslint/ban-ts-comment': 'off',
 			'prefer-const': 'off'
