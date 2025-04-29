@@ -4,6 +4,17 @@ import path from 'path';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig(env => {
+	const input = [
+		'./src/use-distinct.ts',
+		'./src/use-debounce.ts',
+		'./src/use-global-state.ts',
+		'./src/use-prev.ts',
+		'./src/use-storage-state.ts',
+		'./src/use-throttle.ts',
+		'./src/use-url-state.ts',
+		'./src/types.ts'
+	];
+
 	const config: UserConfig = {
 		plugins: [react()],
 		resolve: {
@@ -17,7 +28,7 @@ export default defineConfig(env => {
 		config.build = {
 			copyPublicDir: false,
 			lib: {
-				entry: './src/index.ts',
+				entry: input,
 				formats: ['es']
 			},
 			rollupOptions: {
@@ -51,7 +62,7 @@ export default defineConfig(env => {
 		config.plugins = [
 			...config.plugins!,
 			dts({
-				include: ['./src/*', './src/hooks/*'],
+				include: input,
 				rollupTypes: true
 			})
 		];

@@ -1,9 +1,9 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
-import { createGlobalState, useGlobalState } from '@/hooks/use-global-state';
+import { createGlobalState, useGlobalState } from '@/use-global-state';
 
-describe('/hooks/use-global-state', () => {
+describe('/use-global-state', () => {
 	beforeEach(() => {
 		vi.useFakeTimers();
 	});

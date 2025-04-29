@@ -3,9 +3,9 @@ import { renderHook, act } from '@testing-library/react';
 import isNumber from 'lodash/isNumber';
 
 import is from '@/is';
-import useUrlState from '@/hooks/use-url-state';
+import useUrlState from '@/use-url-state';
 
-describe('/hooks/use-url-state', () => {
+describe('/use-url-state', () => {
 	const mockUrl = new URL('http://localhost');
 	const mockReplaceState = vi.fn();
 	const originalHistory = window.history;

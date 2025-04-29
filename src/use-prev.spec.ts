@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { renderHook } from '@testing-library/react';
 
-import usePrev from '@/hooks/use-prev';
+import usePrev from '@/use-prev';
 
-describe('/hooks/use-prev', () => {
+describe('/use-prev', () => {
 	describe('basic functionality', () => {
 		it('should return initial on first render', () => {
 			const { result } = renderHook(() => {

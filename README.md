@@ -33,7 +33,7 @@ pnpm add use-good-hooks
 Debounces value changes to prevent rapid updates. Useful for search inputs, form validation, and other scenarios where you want to delay state updates until after a user has stopped changing the input.
 
 ```typescript
-import { useDebounce } from 'use-good-hooks';
+import { useDebounce } from 'use-good-hooks/use-debounce';
 
 const SearchComponent = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -71,7 +71,7 @@ const SearchComponent = () => {
 Limits the rate at which a value can update. Useful for scroll events, window resizing, and other high-frequency events.
 
 ```typescript
-import { useThrottle } from 'use-good-hooks';
+import { useThrottle } from 'use-good-hooks/use-throttle';
 
 const ScrollTracker = () => {
   const [scrollY, setScrollY] = useState(0);
@@ -104,7 +104,7 @@ const ScrollTracker = () => {
 Captures the previous value of a state or prop. Useful for comparing changes between renders.
 
 ```typescript
-import { usePrev } from 'use-good-hooks';
+import { usePrev } from 'use-good-hooks/use-prev';
 
 const Counter = ({ count }) => {
   const prevCount = usePrev(count);
@@ -132,7 +132,7 @@ const Counter = ({ count }) => {
 Detects distinct changes in values with support for deep comparison and custom equality checks. Useful for tracking whether complex objects have actually changed.
 
 ```typescript
-import { useDistinct } from 'use-good-hooks';
+import { useDistinct } from 'use-good-hooks/use-distinct';
 
 const UserProfileForm = ({ user }) => {
   const { distinct, value, prevValue } = useDistinct(user, { deep: true });
@@ -174,7 +174,7 @@ const UserProfileForm = ({ user }) => {
 Persists state to localStorage or sessionStorage with automatic serialization/deserialization.
 
 ```typescript
-import { useStorageState } from 'use-good-hooks';
+import { useStorageState } from 'use-good-hooks/use-storage-state';
 
 const ThemePreferences = () => {
   const [preferences, setPreferences, { removeKey }] = useStorageState('theme-prefs', {
@@ -225,7 +225,7 @@ const ThemePreferences = () => {
 Synchronizes state with URL query parameters. Great for shareable UI states, filters, pagination, and search terms.
 
 ```typescript
-import { useUrlState } from 'use-good-hooks';
+import { useUrlState } from 'use-good-hooks/use-url-state';
 
 const ProductFilter = () => {
   const [filters, setFilters] = useUrlState({
@@ -279,7 +279,7 @@ const ProductFilter = () => {
 Creates and manages global state that can be shared across components with automatic synchronization.
 
 ```typescript
-import { createGlobalState, useGlobalState } from 'use-good-hooks';
+import { createGlobalState, useGlobalState } from 'use-good-hooks/use-global-state';
 
 // Create a global state instance (typically in a separate file)
 const counterState = createGlobalState({ count: 0 });
@@ -321,7 +321,7 @@ const CounterActions = () => {
 
 ```typescript
 // state/counter.ts
-import { createGlobalState } from 'use-good-hooks';
+import { createGlobalState } from 'use-good-hooks/use-global-state';
 
 export const counterState = createGlobalState({ count: 0 });
 ```
@@ -329,7 +329,7 @@ export const counterState = createGlobalState({ count: 0 });
 2. Then use it in any component:
 
 ```typescript
-import { useGlobalState } from 'use-good-hooks';
+import { useGlobalState } from 'use-good-hooks/use-global-state';
 import { counterState } from './state/counter';
 
 const MyComponent = () => {

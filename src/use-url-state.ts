@@ -11,7 +11,7 @@ import size from 'lodash/size';
 
 import { StrictObject } from '@/types';
 import is from '@/is';
-import useDebounce from '@/hooks/use-debounce';
+import useDebounce from '@/use-debounce';
 
 type SetUrlStateAction<T> = T | ((prevState: T) => T);
 type UseUrlStateOptions = {

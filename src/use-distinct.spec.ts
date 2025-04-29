@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
-import useDistinct from '@/hooks/use-distinct';
+import useDistinct from '@/use-distinct';
 
-describe('/hooks/use-distinct', () => {
+describe('/use-distinct', () => {
 	beforeEach(() => {
 		vi.useFakeTimers();
 	});

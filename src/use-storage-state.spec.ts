@@ -3,9 +3,9 @@ import { renderHook, act } from '@testing-library/react';
 import JSON from 'use-json';
 
 import is from '@/is';
-import useStorageState, { jsonReplacer } from '@/hooks/use-storage-state';
+import useStorageState, { jsonReplacer } from '@/use-storage-state';
 
-describe('/hooks/use-storage-state', () => {
+describe('/use-storage-state', () => {
 	const mockStorage = {
 		getItem: vi.fn(),
 		setItem: vi.fn(),
