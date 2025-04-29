@@ -49,7 +49,7 @@ export default defineConfig(env => {
 					'lodash/throttle',
 					'react-dom',
 					'react',
-					'react/jsxRuntime',
+					'react/jsx-runtime',
 					'use-json',
 					'use-qs'
 				],
