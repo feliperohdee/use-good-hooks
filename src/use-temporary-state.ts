@@ -15,7 +15,7 @@ const useTemporaryState = <T>(initialState: T, timeout: number) => {
 		};
 	}, [initialState, state, timeout]);
 
-	return [state, setState];
+	return [state, setState] as const;
 };
 
 export default useTemporaryState;
