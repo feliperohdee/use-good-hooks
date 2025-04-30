@@ -362,6 +362,29 @@ const MyComponent = () => {
     - `state`: The component's local copy of the state
     - `setState`: Function to update global state (accepts new value or update function)
 
+### `useTemporaryState`
+
+Creates a temporary state that resets after a specified timeout.
+
+```typescript
+import { useTemporaryState } from 'use-good-hooks/use-temporary-state';
+
+const [state, setState] = useTemporaryState('initial', 1000);
+
+// State will reset to 'initial' after 1 second
+```
+
+#### Parameters
+
+- `initialState`: The initial state value
+- `timeout`: The timeout duration in milliseconds (default: 3000)
+
+#### Returns
+
+- Array with:
+    - `state`: The current state
+    - `setState`: Function to update state
+
 ## 🧪 Running Tests
 
 This library is thoroughly tested with Vitest and React Testing Library. To run the tests:
@@ -385,6 +408,8 @@ Each hook in this library is designed with performance in mind:
 2. `useDistinct` avoids reference equality problems with optional deep comparison
 3. `useStorageState` batches storage updates to reduce expensive serialization/deserialization
 4. `useUrlState` efficiently handles URL synchronization with debouncing
+5. `useGlobalState` and `createGlobalState` provide a way to share state across components with automatic synchronization
+6. `useTemporaryState` allows for temporary state that resets after a timeout
 
 ## 🛠️ Development
 

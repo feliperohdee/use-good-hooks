@@ -18,7 +18,7 @@ describe('/use-global-state', () => {
 			const [state, setState, store] = createGlobalState(initialState);
 
 			expect(state).toEqual(initialState);
-			expect(typeof setState).toBe('function');
+			expect(typeof setState).toEqual('function');
 			expect(store).toHaveProperty('getState');
 			expect(store).toHaveProperty('subscribe');
 			expect(store).toHaveProperty('resetState');
@@ -229,7 +229,7 @@ describe('/use-global-state', () => {
 			});
 
 			expect(result.current[0]).toEqual(initialState);
-			expect(typeof result.current[1]).toBe('function');
+			expect(typeof result.current[1]).toEqual('function');
 		});
 
 		it('should update component state when global state changes', () => {

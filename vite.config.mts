@@ -10,6 +10,7 @@ export default defineConfig(env => {
 		'./src/use-global-state.ts',
 		'./src/use-prev.ts',
 		'./src/use-storage-state.ts',
+		'./src/use-temporary-state.ts',
 		'./src/use-throttle.ts',
 		'./src/use-url-state.ts',
 		'./src/types.ts'
