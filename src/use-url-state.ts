@@ -73,9 +73,9 @@ const useUrlState = <T extends StrictObject>(
 			if (onError) {
 				onError(err as Error);
 			}
-
-			return initialState;
 		}
+
+		return initialState;
 	};
 
 	const [state, setState] = useState<T>(getInitialValue);

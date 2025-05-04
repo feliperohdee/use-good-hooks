@@ -121,6 +121,11 @@ describe('/use-url-state', () => {
 			});
 
 			expect(mockReplaceState).toHaveBeenCalledTimes(1);
+			expect(mockReplaceState).toHaveBeenCalledWith(
+				{},
+				'',
+				expect.stringContaining('count=0')
+			);
 
 			act(() => {
 				vi.advanceTimersByTime(500);

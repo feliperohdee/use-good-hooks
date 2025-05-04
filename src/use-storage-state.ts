@@ -61,10 +61,56 @@ const useStorageState = <T extends StrictObject>(
 	key: string,
 	initialState: T,
 	options?: UseStorageStateOptions
-): [T, (value: T | ((prev: T) => T)) => void, { removeKey: () => void }] => {
+): [
+	T,
+	(value: T | ((prev: T) => T)) => void,
+	{
+		removeKey: () => void;
+	}
+] => {
 	const optionsRef = useRef(options || {});
-	const init = useRef(false);
-	const [state, setState] = useState<T>(initialState);
+	const getInitialValue = (): T => {
+		const {
+			storage = DEFAULT_STORAGE,
+			omitKeys,
+			onError,
+			pickKeys
+		} = optionsRef.current;
+
+		try {
+			const storageApi =
+				storage === 'local' ? localStorage : sessionStorage;
+			const storedState = storageApi?.getItem(key);
+
+			if (storedState) {
+				let parsedState = JSON.parse(storedState, jsonReviver);
+
+				if (omitKeys && (size(omitKeys) || isFunction(omitKeys))) {
+					parsedState = isFunction(omitKeys)
+						? omitBy(parsedState, omitKeys)
+						: omit(parsedState, omitKeys);
+				}
+
+				if (pickKeys && (size(pickKeys) || isFunction(pickKeys))) {
+					parsedState = isFunction(pickKeys)
+						? pickBy(parsedState, pickKeys)
+						: pick(parsedState, pickKeys);
+				}
+
+				return isEmpty(parsedState)
+					? initialState
+					: merge({}, initialState, parsedState);
+			}
+		} catch (err) {
+			if (onError) {
+				onError(err as Error);
+			}
+		}
+
+		return initialState;
+	};
+
+	const [state, setState] = useState<T>(getInitialValue);
 	const debouncedState = useDebounce(
 		state,
 		optionsRef.current.debounce ?? DEFAULT_DEBOUNCE
@@ -72,7 +118,7 @@ const useStorageState = <T extends StrictObject>(
 
 	// Update storage when state changes
 	useEffect(() => {
-		if (!is.browser() || !init.current) {
+		if (!is.browser()) {
 			return;
 		}
 
@@ -107,61 +153,18 @@ const useStorageState = <T extends StrictObject>(
 				) as T;
 			}
 
-			storageApi.setItem(key, JSON.stringify(persistState, jsonReplacer));
+			const currentStorageState = storageApi.getItem(key);
+			const newStorageState = JSON.stringify(persistState, jsonReplacer);
+
+			if (currentStorageState !== newStorageState) {
+				storageApi.setItem(key, newStorageState);
+			}
 		} catch (err) {
 			if (onError) {
 				onError(err as Error);
 			}
 		}
 	}, [key, debouncedState]);
-
-	// Load state from storage
-	useEffect(() => {
-		if (init.current) {
-			return;
-		}
-
-		const {
-			storage = DEFAULT_STORAGE,
-			omitKeys,
-			onError,
-			pickKeys
-		} = optionsRef.current;
-
-		try {
-			const storageApi =
-				storage === 'local' ? localStorage : sessionStorage;
-			const storedState = storageApi?.getItem(key);
-
-			if (storedState) {
-				let parsedState = JSON.parse(storedState, jsonReviver);
-
-				if (omitKeys && (size(omitKeys) || isFunction(omitKeys))) {
-					parsedState = isFunction(omitKeys)
-						? omitBy(parsedState, omitKeys)
-						: omit(parsedState, omitKeys);
-				}
-
-				if (pickKeys && (size(pickKeys) || isFunction(pickKeys))) {
-					parsedState = isFunction(pickKeys)
-						? pickBy(parsedState, pickKeys)
-						: pick(parsedState, pickKeys);
-				}
-
-				setState(
-					isEmpty(parsedState)
-						? initialState
-						: merge({}, initialState, parsedState)
-				);
-			}
-		} catch (err) {
-			if (onError) {
-				onError(err as Error);
-			}
-		} finally {
-			init.current = true;
-		}
-	}, []); // eslint-disable-line react-hooks/exhaustive-deps
 
 	// Remove key from storage
 	const removeKey = useCallback(() => {

@@ -73,7 +73,7 @@ describe('/use-storage-state', () => {
 			const { result } = renderHook(() => {
 				return useStorageState(
 					'testKey',
-					{ value: 'initialValue' },
+					{ value: 'initial' },
 					{ debounce: 100 }
 				);
 			});
@@ -83,13 +83,18 @@ describe('/use-storage-state', () => {
 			});
 
 			// Storage should not be updated immediately
-			expect(mockStorage.setItem).not.toHaveBeenCalled();
+			expect(mockStorage.setItem).toHaveBeenCalledOnce();
+			expect(mockStorage.setItem).toHaveBeenCalledWith(
+				'testKey',
+				JSON.stringify({ value: 'initial' })
+			);
 
 			// Fast-forward debounce time
 			act(() => {
 				vi.advanceTimersByTime(100);
 			});
 
+			expect(mockStorage.setItem).toHaveBeenCalledTimes(2);
 			expect(mockStorage.setItem).toHaveBeenCalledWith(
 				'testKey',
 				JSON.stringify({ value: 'newValue' })
@@ -98,7 +103,7 @@ describe('/use-storage-state', () => {
 
 		it('should handle state updates with function updater', () => {
 			const { result } = renderHook(() => {
-				return useStorageState('testKey', { value: 'initialValue' });
+				return useStorageState('testKey', { value: 'initial' });
 			});
 
 			act(() => {
@@ -113,7 +118,7 @@ describe('/use-storage-state', () => {
 
 			expect(mockStorage.setItem).toHaveBeenCalledWith(
 				'testKey',
-				JSON.stringify({ value: 'initialValue_updated' })
+				JSON.stringify({ value: 'initial_updated' })
 			);
 		});
 
@@ -134,13 +139,21 @@ describe('/use-storage-state', () => {
 				vi.advanceTimersByTime(500);
 			});
 
-			expect(mockStorage.setItem).not.toHaveBeenCalled();
+			expect(mockStorage.setItem).toHaveBeenCalledOnce();
+			expect(mockStorage.setItem).toHaveBeenCalledWith(
+				'testKey',
+				JSON.stringify({ value: 'initial' })
+			);
 
 			act(() => {
 				vi.advanceTimersByTime(500);
 			});
 
-			expect(mockStorage.setItem).toHaveBeenCalled();
+			expect(mockStorage.setItem).toHaveBeenCalledTimes(2);
+			expect(mockStorage.setItem).toHaveBeenCalledWith(
+				'testKey',
+				JSON.stringify({ value: 'newValue' })
+			);
 		});
 	});
 
@@ -185,7 +198,7 @@ describe('/use-storage-state', () => {
 			vi.mocked(is.browser).mockReturnValue(false);
 
 			const { result } = renderHook(() => {
-				return useStorageState('testKey', { value: 'initialValue' });
+				return useStorageState('testKey', { value: 'initial' });
 			});
 
 			act(() => {
@@ -203,7 +216,7 @@ describe('/use-storage-state', () => {
 	describe('key management', () => {
 		it('should handle removeKey functionality', () => {
 			const { result } = renderHook(() => {
-				return useStorageState('testKey', { value: 'initialValue' });
+				return useStorageState('testKey', { value: 'initial' });
 			});
 
 			act(() => {
@@ -211,7 +224,7 @@ describe('/use-storage-state', () => {
 			});
 
 			expect(mockStorage.removeItem).toHaveBeenCalledWith('testKey');
-			expect(result.current[0]).toEqual({ value: 'initialValue' });
+			expect(result.current[0]).toEqual({ value: 'initial' });
 		});
 
 		it('should handle omitKeys with array', () => {
