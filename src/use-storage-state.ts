@@ -117,6 +117,10 @@ const useStorageState = <T extends StrictObject>(
 
 	// Load state from storage
 	useEffect(() => {
+		if (init.current) {
+			return;
+		}
+
 		const {
 			storage = DEFAULT_STORAGE,
 			omitKeys,
