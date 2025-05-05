@@ -5,26 +5,42 @@ import JSON from 'use-json';
 import is from '@/is';
 import useStorageState, { jsonReplacer } from '@/use-storage-state';
 
+class FakeStorage {
+	constructor(private storage: Record<string, string> = {}) {}
+
+	getItem(key: string) {
+		return this.storage[key];
+	}
+
+	setItem(key: string, value: string) {
+		this.storage[key] = value;
+	}
+
+	removeItem(key: string) {
+		delete this.storage[key];
+	}
+}
+
 describe('/use-storage-state', () => {
-	const mockStorage = {
-		getItem: vi.fn(),
-		setItem: vi.fn(),
-		removeItem: vi.fn()
-	};
+	let fakeStorage: FakeStorage;
 
 	beforeEach(() => {
+		fakeStorage = new FakeStorage();
 		vi.useFakeTimers();
 
 		Object.defineProperty(window, 'localStorage', {
-			value: mockStorage,
+			value: fakeStorage,
 			writable: true
 		});
 
 		Object.defineProperty(window, 'sessionStorage', {
-			value: mockStorage,
+			value: fakeStorage,
 			writable: true
 		});
 
+		vi.spyOn(fakeStorage, 'getItem');
+		vi.spyOn(fakeStorage, 'setItem');
+		vi.spyOn(fakeStorage, 'removeItem');
 		vi.spyOn(is, 'browser').mockReturnValue(true);
 	});
 
@@ -35,8 +51,6 @@ describe('/use-storage-state', () => {
 
 	describe('initialization', () => {
 		it('should initialize with the default value when storage is empty', () => {
-			mockStorage.getItem.mockReturnValue(null);
-
 			const { result } = renderHook(() => {
 				return useStorageState('testKey', { value: 'defaultValue' });
 			});
@@ -45,7 +59,8 @@ describe('/use-storage-state', () => {
 		});
 
 		it('should load initial value from storage', () => {
-			mockStorage.getItem.mockReturnValue(
+			fakeStorage.setItem(
+				'testKey',
 				JSON.stringify({ value: 'storedValue' })
 			);
 
@@ -58,7 +73,7 @@ describe('/use-storage-state', () => {
 
 		it('should handle complex objects', () => {
 			const complexObject = { foo: 'bar', nested: { value: 42 } };
-			mockStorage.getItem.mockReturnValue(JSON.stringify(complexObject));
+			fakeStorage.setItem('testKey', JSON.stringify(complexObject));
 
 			const { result } = renderHook(() => {
 				return useStorageState('testKey', {});
@@ -83,8 +98,8 @@ describe('/use-storage-state', () => {
 			});
 
 			// Storage should not be updated immediately
-			expect(mockStorage.setItem).toHaveBeenCalledOnce();
-			expect(mockStorage.setItem).toHaveBeenCalledWith(
+			expect(fakeStorage.setItem).toHaveBeenCalledOnce();
+			expect(fakeStorage.setItem).toHaveBeenCalledWith(
 				'testKey',
 				JSON.stringify({ value: 'initial' })
 			);
@@ -94,8 +109,8 @@ describe('/use-storage-state', () => {
 				vi.advanceTimersByTime(100);
 			});
 
-			expect(mockStorage.setItem).toHaveBeenCalledTimes(2);
-			expect(mockStorage.setItem).toHaveBeenCalledWith(
+			expect(fakeStorage.setItem).toHaveBeenCalledTimes(2);
+			expect(fakeStorage.setItem).toHaveBeenCalledWith(
 				'testKey',
 				JSON.stringify({ value: 'newValue' })
 			);
@@ -116,7 +131,7 @@ describe('/use-storage-state', () => {
 				vi.advanceTimersByTime(500);
 			});
 
-			expect(mockStorage.setItem).toHaveBeenCalledWith(
+			expect(fakeStorage.setItem).toHaveBeenCalledWith(
 				'testKey',
 				JSON.stringify({ value: 'initial_updated' })
 			);
@@ -139,8 +154,8 @@ describe('/use-storage-state', () => {
 				vi.advanceTimersByTime(500);
 			});
 
-			expect(mockStorage.setItem).toHaveBeenCalledOnce();
-			expect(mockStorage.setItem).toHaveBeenCalledWith(
+			expect(fakeStorage.setItem).toHaveBeenCalledOnce();
+			expect(fakeStorage.setItem).toHaveBeenCalledWith(
 				'testKey',
 				JSON.stringify({ value: 'initial' })
 			);
@@ -149,8 +164,8 @@ describe('/use-storage-state', () => {
 				vi.advanceTimersByTime(500);
 			});
 
-			expect(mockStorage.setItem).toHaveBeenCalledTimes(2);
-			expect(mockStorage.setItem).toHaveBeenCalledWith(
+			expect(fakeStorage.setItem).toHaveBeenCalledTimes(2);
+			expect(fakeStorage.setItem).toHaveBeenCalledWith(
 				'testKey',
 				JSON.stringify({ value: 'newValue' })
 			);
@@ -159,8 +174,6 @@ describe('/use-storage-state', () => {
 
 	describe('storage type', () => {
 		it('should use sessionStorage when specified', () => {
-			mockStorage.getItem.mockReturnValue(null);
-
 			renderHook(() => {
 				return useStorageState(
 					'testKey',
@@ -169,7 +182,7 @@ describe('/use-storage-state', () => {
 				);
 			});
 
-			expect(mockStorage.getItem).toHaveBeenCalledWith('testKey');
+			expect(fakeStorage.getItem).toHaveBeenCalledWith('testKey');
 		});
 	});
 
@@ -177,7 +190,8 @@ describe('/use-storage-state', () => {
 		it('should handle storage errors', () => {
 			const onError = vi.fn();
 			const error = new Error('Storage error');
-			mockStorage.getItem.mockImplementation(() => {
+
+			vi.mocked(fakeStorage.getItem).mockImplementation(() => {
 				throw error;
 			});
 
@@ -209,7 +223,7 @@ describe('/use-storage-state', () => {
 				vi.advanceTimersByTime(500);
 			});
 
-			expect(mockStorage.setItem).not.toHaveBeenCalled();
+			expect(fakeStorage.setItem).not.toHaveBeenCalled();
 		});
 	});
 
@@ -223,13 +237,13 @@ describe('/use-storage-state', () => {
 				result.current[2].removeKey();
 			});
 
-			expect(mockStorage.removeItem).toHaveBeenCalledWith('testKey');
+			expect(fakeStorage.removeItem).toHaveBeenCalledWith('testKey');
 			expect(result.current[0]).toEqual({ value: 'initial' });
 		});
 
 		it('should handle omitKeys with array', () => {
 			const initialState = { keep: 'value', remove: 'sensitive' };
-			mockStorage.getItem.mockReturnValue(JSON.stringify(initialState));
+			fakeStorage.setItem('testKey', JSON.stringify(initialState));
 
 			const { result } = renderHook(() => {
 				return useStorageState('testKey', initialState, {
@@ -245,7 +259,7 @@ describe('/use-storage-state', () => {
 				vi.advanceTimersByTime(500);
 			});
 
-			expect(mockStorage.setItem).toHaveBeenCalledWith(
+			expect(fakeStorage.setItem).toHaveBeenCalledWith(
 				'testKey',
 				JSON.stringify({ keep: 'newValue' })
 			);
@@ -253,7 +267,7 @@ describe('/use-storage-state', () => {
 
 		it('should handle omitKeys with function', () => {
 			const initialState = { public: 'value', sensitive: 'data' };
-			mockStorage.getItem.mockReturnValue(JSON.stringify(initialState));
+			fakeStorage.setItem('testKey', JSON.stringify(initialState));
 
 			const { result } = renderHook(() => {
 				return useStorageState('testKey', initialState, {
@@ -269,7 +283,7 @@ describe('/use-storage-state', () => {
 				vi.advanceTimersByTime(500);
 			});
 
-			expect(mockStorage.setItem).toHaveBeenCalledWith(
+			expect(fakeStorage.setItem).toHaveBeenCalledWith(
 				'testKey',
 				JSON.stringify({ public: 'newValue' })
 			);
@@ -277,7 +291,7 @@ describe('/use-storage-state', () => {
 
 		it('should handle pickKeys with array', () => {
 			const initialState = { keep: 'value', ignore: 'other' };
-			mockStorage.getItem.mockReturnValue(JSON.stringify(initialState));
+			fakeStorage.setItem('testKey', JSON.stringify(initialState));
 
 			const { result } = renderHook(() => {
 				return useStorageState('testKey', initialState, {
@@ -293,7 +307,7 @@ describe('/use-storage-state', () => {
 				vi.advanceTimersByTime(500);
 			});
 
-			expect(mockStorage.setItem).toHaveBeenCalledWith(
+			expect(fakeStorage.setItem).toHaveBeenCalledWith(
 				'testKey',
 				JSON.stringify({ keep: 'newValue' })
 			);
@@ -301,7 +315,7 @@ describe('/use-storage-state', () => {
 
 		it('should handle pickKeys with function', () => {
 			const initialState = { saveMe: 'value', temp: 'data' };
-			mockStorage.getItem.mockReturnValue(JSON.stringify(initialState));
+			fakeStorage.setItem('testKey', JSON.stringify(initialState));
 
 			const { result } = renderHook(() => {
 				return useStorageState('testKey', initialState, {
@@ -317,7 +331,7 @@ describe('/use-storage-state', () => {
 				vi.advanceTimersByTime(500);
 			});
 
-			expect(mockStorage.setItem).toHaveBeenCalledWith(
+			expect(fakeStorage.setItem).toHaveBeenCalledWith(
 				'testKey',
 				JSON.stringify({ saveMe: 'newValue' })
 			);
@@ -329,7 +343,7 @@ describe('/use-storage-state', () => {
 				remove: 'data',
 				other: 'info'
 			};
-			mockStorage.getItem.mockReturnValue(JSON.stringify(initialState));
+			fakeStorage.setItem('testKey', JSON.stringify(initialState));
 
 			const { result } = renderHook(() => {
 				return useStorageState('testKey', initialState, {
@@ -350,7 +364,7 @@ describe('/use-storage-state', () => {
 				vi.advanceTimersByTime(500);
 			});
 
-			expect(mockStorage.setItem).toHaveBeenCalledWith(
+			expect(fakeStorage.setItem).toHaveBeenCalledWith(
 				'testKey',
 				JSON.stringify({ keep: 'newValue' })
 			);
@@ -363,8 +377,8 @@ describe('/use-storage-state', () => {
 				['key1', 'value1'],
 				['key2', 'value2']
 			]);
-
-			mockStorage.getItem.mockReturnValue(
+			fakeStorage.setItem(
+				'testKey',
 				JSON.stringify({ map }, jsonReplacer)
 			);
 
@@ -377,8 +391,8 @@ describe('/use-storage-state', () => {
 
 		it('should handle Set objects', () => {
 			const set = new Set(['value1', 'value2', 'value3']);
-
-			mockStorage.getItem.mockReturnValue(
+			fakeStorage.setItem(
+				'testKey',
 				JSON.stringify({ set }, jsonReplacer)
 			);
 

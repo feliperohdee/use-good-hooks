@@ -70,6 +70,10 @@ const useStorageState = <T extends StrictObject>(
 ] => {
 	const optionsRef = useRef(options || {});
 	const getInitialValue = (): T => {
+		if (!is.browser()) {
+			return initialState;
+		}
+
 		const {
 			storage = DEFAULT_STORAGE,
 			omitKeys,
@@ -77,9 +81,9 @@ const useStorageState = <T extends StrictObject>(
 			pickKeys
 		} = optionsRef.current;
 
+		const storageApi = storage === 'local' ? localStorage : sessionStorage;
+
 		try {
-			const storageApi =
-				storage === 'local' ? localStorage : sessionStorage;
 			const storedState = storageApi?.getItem(key);
 
 			if (storedState) {
@@ -128,6 +132,7 @@ const useStorageState = <T extends StrictObject>(
 			omitKeys,
 			pickKeys
 		} = optionsRef.current;
+
 		const storageApi = storage === 'local' ? localStorage : sessionStorage;
 
 		if (!storageApi) {
@@ -171,6 +176,7 @@ const useStorageState = <T extends StrictObject>(
 		if (!is.browser()) {
 			return;
 		}
+
 		setState(initialState);
 
 		const { storage = DEFAULT_STORAGE } = optionsRef.current;
