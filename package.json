@@ -1,7 +1,7 @@
 {
 	"name": "use-good-hooks",
 	"dependencies": {
-		"use-json": "^1.0.0",
+		"use-json": "^1.0.1",
 		"use-qs": "^1.0.4"
 	},
 	"devDependencies": {
@@ -49,5 +49,5 @@
 		"test": "vitest",
 		"test:coverage": "vitest --coverage"
 	},
-	"version": "1.0.22"
+	"version": "1.0.23"
 }
