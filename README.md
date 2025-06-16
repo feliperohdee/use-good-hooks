@@ -66,6 +66,45 @@ const SearchComponent = () => {
 
 - The debounced value
 
+### `useDebounceFn`
+
+Creates a debounced version of a function. This hook ensures that a function is only executed after a specified period of inactivity, preventing it from being called too frequently. It's ideal for handling events like button clicks or API triggers that should not fire on every user action.
+
+```typescript
+import { useDebounceFn } from 'use-good-hooks/use-debounce-fn';
+
+const SaveButton = () => {
+  const [status, setStatus] = useState('Idle');
+
+  const debouncedSave = useDebounceFn(() => {
+    setStatus('Saving...');
+    // Simulate API call
+    setTimeout(() => setStatus('Saved!'), 1000);
+  }, 1000); // 1000ms delay
+
+  const handleClick = () => {
+    setStatus('Waiting...');
+    debouncedSave();
+  };
+
+  return (
+    <div>
+      <button onClick={handleClick}>Save Changes</button>
+      <p>Status: {status}</p>
+    </div>
+  );
+};
+```
+
+#### Parameters
+
+- `fn`: The function to debounce
+- `delay`: (Optional) The delay in milliseconds (default: 300ms)
+
+#### Returns
+
+- The debounced function.
+
 ### `useThrottle`
 
 Limits the rate at which a value can update. Useful for scroll events, window resizing, and other high-frequency events.
@@ -99,6 +138,42 @@ const ScrollTracker = () => {
 
 - The throttled value
 
+### `useThrottleFn`
+
+Creates a throttled version of a function, limiting its execution to at most once per specified interval. It is useful for performance-critical scenarios like handling mouse movements, scrolling, or window resizing events without overwhelming the browser.
+
+```typescript
+import { useThrottleFn } from 'use-good-hooks/use-throttle-fn';
+
+const MouseTracker = () => {
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+
+  const throttledMouseMove = useThrottleFn((event) => {
+    setPosition({ x: event.clientX, y: event.clientY });
+  }, 300); // Update at most every 300ms
+
+  useEffect(() => {
+    window.addEventListener('mousemove', throttledMouseMove);
+    return () => window.removeEventListener('mousemove', throttledMouseMove);
+  }, [throttledMouseMove]);
+
+  return (
+    <div>
+      Throttled mouse position: X: {position.x}, Y: {position.y}
+    </div>
+  );
+};
+```
+
+#### Parameters
+
+- `fn`: The function to throttle
+- `delay`: (Optional) The throttle interval in milliseconds (default: 300ms)
+
+#### Returns
+
+- The throttled function.
+
 ### `usePrev`
 
 Captures the previous value of a state or prop. Useful for comparing changes between renders.
@@ -126,6 +201,60 @@ const Counter = ({ count }) => {
 #### Returns
 
 - The previous value (undefined on first render)
+
+### `useStateHistory`
+
+Tracks the history of a state value, providing undo and redo capabilities. This is perfect for building editors, forms, or any UI where users might want to reverse their actions.
+
+```typescript
+import { useStateHistory } from 'use-good-hooks/use-state-history';
+
+const TextEditor = () => {
+  const {
+    state,
+    setState,
+    history,
+    back,
+    forward,
+    canBack,
+    canForward,
+  } = useStateHistory('', { capacity: 10 });
+
+  return (
+    <div>
+      <textarea
+        value={state}
+        onChange={(e) => setState(e.target.value)}
+        rows={4}
+        cols={50}
+      />
+      <div>
+        <button onClick={back} disabled={!canBack}>Undo</button>
+        <button onClick={forward} disabled={!canForward}>Redo</button>
+      </div>
+      <p>History (last {history.length} changes):</p>
+      <pre>{JSON.stringify(history, null, 2)}</pre>
+    </div>
+  );
+};
+```
+
+#### Parameters
+
+- `initialState`: The initial state value
+- `options`: (Optional) Configuration options:
+    - `capacity`: Maximum number of history entries to keep (default: 10)
+
+#### Returns
+
+- Object with:
+    - `state`: The current state value
+    - `setState`: Function to update the state and record history
+    - `history`: Array of all recorded states
+    - `back`: Function to move to the previous state (undo)
+    - `forward`: Function to move to the next state (redo)
+    - `canBack`: Boolean indicating if undo is possible
+    - `canForward`: Boolean indicating if redo is possible
 
 ### `useDistinct`
 
