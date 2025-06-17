@@ -33,7 +33,7 @@ pnpm add use-good-hooks
 Debounces value changes to prevent rapid updates. Useful for search inputs, form validation, and other scenarios where you want to delay state updates until after a user has stopped changing the input.
 
 ```typescript
-import { useDebounce } from 'use-good-hooks/use-debounce';
+import useDebounce from 'use-good-hooks/use-debounce';
 
 const SearchComponent = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -71,7 +71,7 @@ const SearchComponent = () => {
 Creates a debounced version of a function. This hook ensures that a function is only executed after a specified period of inactivity, preventing it from being called too frequently. It's ideal for handling events like button clicks or API triggers that should not fire on every user action.
 
 ```typescript
-import { useDebounceFn } from 'use-good-hooks/use-debounce-fn';
+import useDebounceFn from 'use-good-hooks/use-debounce-fn';
 
 const SaveButton = () => {
   const [status, setStatus] = useState('Idle');
@@ -110,7 +110,7 @@ const SaveButton = () => {
 Limits the rate at which a value can update. Useful for scroll events, window resizing, and other high-frequency events.
 
 ```typescript
-import { useThrottle } from 'use-good-hooks/use-throttle';
+import useThrottle from 'use-good-hooks/use-throttle';
 
 const ScrollTracker = () => {
   const [scrollY, setScrollY] = useState(0);
@@ -143,7 +143,7 @@ const ScrollTracker = () => {
 Creates a throttled version of a function, limiting its execution to at most once per specified interval. It is useful for performance-critical scenarios like handling mouse movements, scrolling, or window resizing events without overwhelming the browser.
 
 ```typescript
-import { useThrottleFn } from 'use-good-hooks/use-throttle-fn';
+import useThrottleFn from 'use-good-hooks/use-throttle-fn';
 
 const MouseTracker = () => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -179,7 +179,7 @@ const MouseTracker = () => {
 Captures the previous value of a state or prop. Useful for comparing changes between renders.
 
 ```typescript
-import { usePrev } from 'use-good-hooks/use-prev';
+import usePrev from 'use-good-hooks/use-prev';
 
 const Counter = ({ count }) => {
   const prevCount = usePrev(count);
@@ -207,7 +207,7 @@ const Counter = ({ count }) => {
 Tracks the history of a state value, providing undo and redo capabilities. This is perfect for building editors, forms, or any UI where users might want to reverse their actions.
 
 ```typescript
-import { useStateHistory } from 'use-good-hooks/use-state-history';
+import useStateHistory from 'use-good-hooks/use-state-history';
 
 const TextEditor = () => {
   const {
@@ -261,7 +261,7 @@ const TextEditor = () => {
 Detects distinct changes in values with support for deep comparison and custom equality checks. Useful for tracking whether complex objects have actually changed.
 
 ```typescript
-import { useDistinct } from 'use-good-hooks/use-distinct';
+import useDistinct from 'use-good-hooks/use-distinct';
 
 const UserProfileForm = ({ user }) => {
   const { distinct, value, prevValue } = useDistinct(user, { deep: true });
@@ -303,7 +303,7 @@ const UserProfileForm = ({ user }) => {
 Persists state to localStorage or sessionStorage with automatic serialization/deserialization.
 
 ```typescript
-import { useStorageState } from 'use-good-hooks/use-storage-state';
+import useStorageState from 'use-good-hooks/use-storage-state';
 
 const ThemePreferences = () => {
   const [preferences, setPreferences, { removeKey }] = useStorageState('theme-prefs', {
@@ -354,7 +354,7 @@ const ThemePreferences = () => {
 Synchronizes state with URL query parameters. Great for shareable UI states, filters, pagination, and search terms.
 
 ```typescript
-import { useUrlState } from 'use-good-hooks/use-url-state';
+import useUrlState from 'use-good-hooks/use-url-state';
 
 const ProductFilter = () => {
   const [filters, setFilters] = useUrlState({
@@ -496,7 +496,7 @@ const MyComponent = () => {
 Creates a temporary state that resets after a specified timeout.
 
 ```typescript
-import { useTemporaryState } from 'use-good-hooks/use-temporary-state';
+import useTemporaryState from 'use-good-hooks/use-temporary-state';
 
 const [state, setState] = useTemporaryState('initial', 1000);
 
