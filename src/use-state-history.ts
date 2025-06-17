@@ -12,16 +12,25 @@ type HistoryAction<T> =
 	| { type: 'SET'; newPresent: T }
 	| { type: 'UNDO' };
 
+type HistoryOnChange<T> = ({
+	action,
+	state
+}: {
+	action: HistoryAction<T>['type'];
+	state: HistoryState<T>['present'];
+}) => void;
+
 type HistoryState<T> = {
 	future: T[];
 	past: T[];
 	present: T | null;
 };
 
-type UseStateHistoryOptions = {
+type UseStateHistoryOptions<T> = {
 	debounceOptions?: DebounceSettings;
 	debounceTime?: number;
 	maxCapacity?: number;
+	onChange?: HistoryOnChange<T>;
 };
 
 const initialHistoryState = {
@@ -30,11 +39,17 @@ const initialHistoryState = {
 	future: []
 };
 
-const historyReducer = <T>(
-	state: HistoryState<T>,
-	action: HistoryAction<T>,
-	maxCapacity?: number
-): HistoryState<T> => {
+const historyReducer = <T>({
+	action,
+	maxCapacity,
+	onChange,
+	state
+}: {
+	action: HistoryAction<T>;
+	maxCapacity?: number;
+	onChange?: HistoryOnChange<T>;
+	state: HistoryState<T>;
+}): HistoryState<T> => {
 	const { past, present, future } = state;
 
 	if (action.type === 'UNDO') {
@@ -44,12 +59,18 @@ const historyReducer = <T>(
 
 		const previous = past[size(past) - 1];
 		const newPast = past.slice(0, size(past) - 1);
-
-		return {
+		const newState = {
 			past: newPast,
 			present: cloneDeep(previous),
 			future: [cloneDeep(present as T), ...future]
 		};
+
+		onChange?.({
+			action: action.type,
+			state: newState.present
+		});
+
+		return newState;
 	} else if (action.type === 'REDO') {
 		if (size(future) === 0) {
 			return state;
@@ -57,12 +78,18 @@ const historyReducer = <T>(
 
 		const next = future[0];
 		const newFuture = future.slice(1);
-
-		return {
+		const newState = {
 			past: [...past, cloneDeep(present as T)],
 			present: cloneDeep(next),
 			future: newFuture
 		};
+
+		onChange?.({
+			action: action.type,
+			state: newState.present
+		});
+
+		return newState;
 	} else if (action.type === 'SET') {
 		const { newPresent } = action;
 
@@ -73,6 +100,7 @@ const historyReducer = <T>(
 
 		// Create new past array with capacity limit
 		let newPast = [...past];
+
 		if (present !== null) {
 			newPast = [...newPast, cloneDeep(present)];
 		}
@@ -86,17 +114,31 @@ const historyReducer = <T>(
 			newPast = newPast.slice(size(newPast) - maxCapacity);
 		}
 
-		return {
+		const newState = {
 			past: newPast,
 			present: cloneDeep(newPresent),
 			future: []
 		};
+
+		onChange?.({
+			action: action.type,
+			state: newState.present
+		});
+
+		return newState;
 	} else if (action.type === 'CLEAR') {
-		return {
+		const newState = {
 			past: [],
 			present: cloneDeep(action.initialPresent),
 			future: []
 		};
+
+		onChange?.({
+			action: action.type,
+			state: newState.present
+		});
+
+		return newState;
 	} else {
 		throw new Error('Unsupported action type');
 	}
@@ -104,14 +146,21 @@ const historyReducer = <T>(
 
 const useStateHistory = <T>(
 	initialPresent: T,
-	options?: UseStateHistoryOptions
+	options?: UseStateHistoryOptions<T>
 ) => {
-	const { maxCapacity, debounceTime, debounceOptions } = options || {};
+	const { maxCapacity, debounceTime, debounceOptions, onChange } =
+		options || {};
 
 	const initialPresentRef = useRef(initialPresent);
 	const [state, dispatch] = useReducer(
-		(state: HistoryState<T>, action: HistoryAction<T>) =>
-			historyReducer(state, action, maxCapacity),
+		(state: HistoryState<T>, action: HistoryAction<T>) => {
+			return historyReducer({
+				action,
+				maxCapacity,
+				onChange,
+				state
+			});
+		},
 		{
 			...initialHistoryState,
 			present: cloneDeep(initialPresentRef.current)
@@ -121,9 +170,18 @@ const useStateHistory = <T>(
 	const canRedo = size(state.future) !== 0;
 	const canUndo = size(state.past) !== 0;
 
-	const setDirect = useCallback((newPresent: T) => {
-		return dispatch({ type: 'SET', newPresent });
+	const clear = useCallback(() => {
+		return dispatch({
+			initialPresent: initialPresentRef.current,
+			type: 'CLEAR'
+		});
 	}, []);
+
+	const redo = useCallback(() => {
+		if (canRedo) {
+			dispatch({ type: 'REDO' });
+		}
+	}, [canRedo]);
 
 	const setDebounced = useDebounceFn(
 		(newPresent: T) => {
@@ -133,11 +191,9 @@ const useStateHistory = <T>(
 		debounceOptions
 	);
 
-	const redo = useCallback(() => {
-		if (canRedo) {
-			dispatch({ type: 'REDO' });
-		}
-	}, [canRedo]);
+	const setDirect = useCallback((newPresent: T) => {
+		return dispatch({ type: 'SET', newPresent });
+	}, []);
 
 	const undo = useCallback(() => {
 		if (canUndo) {
@@ -155,13 +211,6 @@ const useStateHistory = <T>(
 		},
 		[debounceTime, setDebounced, setDirect]
 	);
-
-	const clear = useCallback(() => {
-		return dispatch({
-			initialPresent: initialPresentRef.current,
-			type: 'CLEAR'
-		});
-	}, []);
 
 	return {
 		canRedo,

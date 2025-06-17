@@ -6,24 +6,31 @@ import useStateHistory from './use-state-history';
 
 describe('/use-state-history', () => {
 	it('should initialize with the initial value', () => {
+		const onChange = vi.fn();
 		const { result } = renderHook(() => {
-			return useStateHistory({ count: 0 });
+			return useStateHistory({ count: 0 }, { onChange });
 		});
 
+		expect(onChange).not.toHaveBeenCalled();
 		expect(result.current.state).toEqual({ count: 0 });
 		expect(result.current.canUndo).toEqual(false);
 		expect(result.current.canRedo).toEqual(false);
 	});
 
 	it('should update the state and store history', () => {
+		const onChange = vi.fn();
 		const { result } = renderHook(() => {
-			return useStateHistory({ count: 0 });
+			return useStateHistory({ count: 0 }, { onChange });
 		});
 
 		act(() => {
 			result.current.set({ count: 1 });
 		});
 
+		expect(onChange).toHaveBeenCalledWith({
+			action: 'SET',
+			state: { count: 1 }
+		});
 		expect(result.current.state).toEqual({ count: 1 });
 		expect(result.current.canUndo).toEqual(true);
 		expect(result.current.canRedo).toEqual(false);
@@ -31,8 +38,9 @@ describe('/use-state-history', () => {
 	});
 
 	it('should undo changes', () => {
+		const onChange = vi.fn();
 		const { result } = renderHook(() => {
-			return useStateHistory({ count: 0 });
+			return useStateHistory({ count: 0 }, { onChange });
 		});
 
 		act(() => {
@@ -40,12 +48,20 @@ describe('/use-state-history', () => {
 			result.current.set({ count: 2 });
 		});
 
+		expect(onChange).toHaveBeenCalledWith({
+			action: 'SET',
+			state: { count: 2 }
+		});
 		expect(result.current.state).toEqual({ count: 2 });
 
 		act(() => {
 			result.current.undo();
 		});
 
+		expect(onChange).toHaveBeenCalledWith({
+			action: 'UNDO',
+			state: { count: 1 }
+		});
 		expect(result.current.state).toEqual({ count: 1 });
 		expect(result.current.canUndo).toEqual(true);
 		expect(result.current.canRedo).toEqual(true);
@@ -54,13 +70,19 @@ describe('/use-state-history', () => {
 	});
 
 	it('should redo changes', () => {
+		const onChange = vi.fn();
 		const { result } = renderHook(() => {
-			return useStateHistory({ count: 0 });
+			return useStateHistory({ count: 0 }, { onChange });
 		});
 
 		act(() => {
 			result.current.set({ count: 1 });
 			result.current.set({ count: 2 });
+		});
+
+		expect(onChange).toHaveBeenCalledWith({
+			action: 'SET',
+			state: { count: 2 }
 		});
 
 		expect(result.current.state).toEqual({ count: 2 });
@@ -69,20 +91,29 @@ describe('/use-state-history', () => {
 			result.current.undo();
 		});
 
+		expect(onChange).toHaveBeenCalledWith({
+			action: 'UNDO',
+			state: { count: 1 }
+		});
 		expect(result.current.state).toEqual({ count: 1 });
 
 		act(() => {
 			result.current.redo();
 		});
 
+		expect(onChange).toHaveBeenCalledWith({
+			action: 'REDO',
+			state: { count: 2 }
+		});
 		expect(result.current.state).toEqual({ count: 2 });
 		expect(result.current.canUndo).toEqual(true);
 		expect(result.current.canRedo).toEqual(false);
 	});
 
 	it('should clear history', () => {
+		const onChange = vi.fn();
 		const { result } = renderHook(() => {
-			return useStateHistory({ count: 0 });
+			return useStateHistory({ count: 0 }, { onChange });
 		});
 
 		act(() => {
@@ -91,6 +122,10 @@ describe('/use-state-history', () => {
 			result.current.clear();
 		});
 
+		expect(onChange).toHaveBeenCalledWith({
+			action: 'CLEAR',
+			state: { count: 0 }
+		});
 		expect(result.current.state).toEqual({ count: 0 });
 		expect(result.current.canUndo).toEqual(false);
 		expect(result.current.canRedo).toEqual(false);
