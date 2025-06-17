@@ -5,15 +5,18 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(env => {
 	const input = [
-		'./src/use-distinct.ts',
+		'./src/types.ts',
+		'./src/use-debounce-fn.ts',
 		'./src/use-debounce.ts',
+		'./src/use-distinct.ts',
 		'./src/use-global-state.ts',
+		'./src/use-history-state.ts',
 		'./src/use-prev.ts',
 		'./src/use-storage-state.ts',
 		'./src/use-temporary-state.ts',
+		'./src/use-throttle-fn.ts',
 		'./src/use-throttle.ts',
-		'./src/use-url-state.ts',
-		'./src/types.ts'
+		'./src/use-url-state.ts'
 	];
 
 	const config: UserConfig = {
@@ -34,11 +37,13 @@ export default defineConfig(env => {
 			},
 			rollupOptions: {
 				external: [
+					'lodash/cloneDeep',
 					'lodash/debounce',
 					'lodash/isEmpty',
 					'lodash/isEqual',
 					'lodash/isFunction',
 					'lodash/isMap',
+					'lodash/isNil',
 					'lodash/isNumber',
 					'lodash/isSet',
 					'lodash/merge',

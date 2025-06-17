@@ -2,13 +2,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import size from 'lodash/size';
 
-import useStateHistory from './use-state-history';
+import useHistoryState from './use-history-state';
 
-describe('/use-state-history', () => {
+describe('/use-history-state', () => {
 	it('should initialize with the initial value', () => {
 		const onChange = vi.fn();
 		const { result } = renderHook(() => {
-			return useStateHistory({ count: 0 }, { onChange });
+			return useHistoryState({ count: 0 }, { onChange });
 		});
 
 		expect(onChange).not.toHaveBeenCalled();
@@ -20,7 +20,7 @@ describe('/use-state-history', () => {
 	it('should update the state and store history', () => {
 		const onChange = vi.fn();
 		const { result } = renderHook(() => {
-			return useStateHistory({ count: 0 }, { onChange });
+			return useHistoryState({ count: 0 }, { onChange });
 		});
 
 		act(() => {
@@ -40,7 +40,7 @@ describe('/use-state-history', () => {
 	it('should undo changes', () => {
 		const onChange = vi.fn();
 		const { result } = renderHook(() => {
-			return useStateHistory({ count: 0 }, { onChange });
+			return useHistoryState({ count: 0 }, { onChange });
 		});
 
 		act(() => {
@@ -72,7 +72,7 @@ describe('/use-state-history', () => {
 	it('should redo changes', () => {
 		const onChange = vi.fn();
 		const { result } = renderHook(() => {
-			return useStateHistory({ count: 0 }, { onChange });
+			return useHistoryState({ count: 0 }, { onChange });
 		});
 
 		act(() => {
@@ -113,7 +113,7 @@ describe('/use-state-history', () => {
 	it('should clear history', () => {
 		const onChange = vi.fn();
 		const { result } = renderHook(() => {
-			return useStateHistory({ count: 0 }, { onChange });
+			return useHistoryState({ count: 0 }, { onChange });
 		});
 
 		act(() => {
@@ -136,7 +136,7 @@ describe('/use-state-history', () => {
 	it('should respect maxCapacity', () => {
 		// Use a maxCapacity of 2
 		const { result } = renderHook(() =>
-			useStateHistory({ count: 0 }, { maxCapacity: 2 })
+			useHistoryState({ count: 0 }, { maxCapacity: 2 })
 		);
 
 		// Add 3 states (initial + 3 new ones)
@@ -183,7 +183,7 @@ describe('/use-state-history', () => {
 
 	it('should perform deep copies to avoid reference issues', () => {
 		const initialObject = { nested: { value: 0 } };
-		const { result } = renderHook(() => useStateHistory(initialObject));
+		const { result } = renderHook(() => useHistoryState(initialObject));
 
 		const newObject = { nested: { value: 1 } };
 
@@ -204,7 +204,7 @@ describe('/use-state-history', () => {
 
 	it('should not add to history if new value is equal to current', () => {
 		const { result } = renderHook(() => {
-			return useStateHistory({ count: 0 });
+			return useHistoryState({ count: 0 });
 		});
 
 		act(() => {
@@ -217,7 +217,7 @@ describe('/use-state-history', () => {
 
 	it('should do nothing on undo/redo if not possible', () => {
 		const { result } = renderHook(() => {
-			return useStateHistory({ count: 0 });
+			return useHistoryState({ count: 0 });
 		});
 
 		// Trying to undo with no history
@@ -273,7 +273,7 @@ describe('/use-state-history', () => {
 
 		it('should debounce updates with debounceTime option', () => {
 			const { result } = renderHook(() =>
-				useStateHistory({ count: 0 }, { debounceTime: 500 })
+				useHistoryState({ count: 0 }, { debounceTime: 500 })
 			);
 
 			// Set the value to 1
@@ -306,7 +306,7 @@ describe('/use-state-history', () => {
 
 		it('should use setDirect to bypass timing controls', () => {
 			const { result } = renderHook(() =>
-				useStateHistory({ count: 0 }, { debounceTime: 500 })
+				useHistoryState({ count: 0 }, { debounceTime: 500 })
 			);
 
 			// Using regular set (should be debounced)

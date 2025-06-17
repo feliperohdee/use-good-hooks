@@ -202,12 +202,12 @@ const Counter = ({ count }) => {
 
 - The previous value (undefined on first render)
 
-### `useStateHistory`
+### `useHistoryState`
 
 Tracks the history of a state value, providing undo and redo capabilities. This is perfect for building editors, forms, or any UI where users might want to reverse their actions.
 
 ```typescript
-import useStateHistory from 'use-good-hooks/use-state-history';
+import useHistoryState from 'use-good-hooks/use-history-state';
 
 const TextEditor = () => {
   const {
@@ -218,7 +218,7 @@ const TextEditor = () => {
     setState,
     state,
     undo
-  } = useStateHistory('', { capacity: 10 });
+  } = useHistoryState('', { capacity: 10 });
 
   return (
     <div>

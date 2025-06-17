@@ -26,7 +26,7 @@ type HistoryState<T> = {
 	present: T | null;
 };
 
-type UseStateHistoryOptions<T> = {
+type UseHistoryOptionsState<T> = {
 	debounceOptions?: DebounceSettings;
 	debounceTime?: number;
 	maxCapacity?: number;
@@ -144,9 +144,9 @@ const historyReducer = <T>({
 	}
 };
 
-const useStateHistory = <T>(
+const useHistoryState = <T>(
 	initialPresent: T,
-	options?: UseStateHistoryOptions<T>
+	options?: UseHistoryOptionsState<T>
 ) => {
 	const { maxCapacity, debounceTime, debounceOptions, onChange } =
 		options || {};
@@ -228,4 +228,4 @@ const useStateHistory = <T>(
 	};
 };
 
-export default useStateHistory;
+export default useHistoryState;
