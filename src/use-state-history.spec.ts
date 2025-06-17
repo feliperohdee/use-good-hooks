@@ -100,7 +100,9 @@ describe('/use-state-history', () => {
 
 	it('should respect maxCapacity', () => {
 		// Use a maxCapacity of 2
-		const { result } = renderHook(() => useStateHistory({ count: 0 }, 2));
+		const { result } = renderHook(() =>
+			useStateHistory({ count: 0 }, { maxCapacity: 2 })
+		);
 
 		// Add 3 states (initial + 3 new ones)
 		act(() => {
@@ -265,37 +267,6 @@ describe('/use-state-history', () => {
 
 			// Only one history entry should exist despite multiple calls
 			expect(result.current.history.past).toEqual([{ count: 0 }]);
-		});
-
-		it('should throttle updates with throttleTime option', () => {
-			const { result } = renderHook(() =>
-				useStateHistory({ count: 0 }, { throttleTime: 500 })
-			);
-
-			// The first set is applied immediately with throttle
-			act(() => {
-				result.current.set({ count: 1 });
-			});
-
-			// Value should be updated immediately due to throttle behavior
-			expect(result.current.state).toEqual({ count: 1 });
-
-			// Multiple updates within throttle window
-			act(() => {
-				result.current.set({ count: 2 });
-				result.current.set({ count: 3 });
-			});
-
-			// Value should still be the first update
-			expect(result.current.state).toEqual({ count: 1 });
-
-			// Advance time past throttle delay
-			act(() => {
-				vi.advanceTimersByTime(500);
-			});
-
-			// Now it should have the last value from throttle window
-			expect(result.current.state).toEqual({ count: 3 });
 		});
 
 		it('should use setDirect to bypass timing controls', () => {

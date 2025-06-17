@@ -1,9 +1,10 @@
-import { useCallback, useReducer, useRef, useEffect } from 'react';
+import { useCallback, useReducer, useRef } from 'react';
 import cloneDeep from 'lodash/cloneDeep';
-import debounce from 'lodash/debounce';
+import isNil from 'lodash/isNil';
 import size from 'lodash/size';
-import throttle from 'lodash/throttle';
-import type { DebounceSettings, ThrottleSettings } from 'lodash';
+import type { DebounceSettings } from 'lodash';
+
+import useDebounceFn from './use-debounce-fn';
 
 type HistoryAction<T> =
 	| { type: 'CLEAR'; initialPresent: T }
@@ -21,8 +22,6 @@ type UseStateHistoryOptions = {
 	debounceOptions?: DebounceSettings;
 	debounceTime?: number;
 	maxCapacity?: number;
-	throttleOptions?: ThrottleSettings;
-	throttleTime?: number;
 };
 
 const initialHistoryState = {
@@ -31,9 +30,6 @@ const initialHistoryState = {
 	future: []
 };
 
-/**
- * Reducer for managing state history
- */
 const historyReducer = <T>(
 	state: HistoryState<T>,
 	action: HistoryAction<T>,
@@ -83,7 +79,7 @@ const historyReducer = <T>(
 
 		// Remove oldest entries if max capacity is reached
 		if (
-			maxCapacity !== undefined &&
+			!isNil(maxCapacity) &&
 			maxCapacity > 0 &&
 			size(newPast) > maxCapacity
 		) {
@@ -108,22 +104,11 @@ const historyReducer = <T>(
 
 const useStateHistory = <T>(
 	initialPresent: T,
-	options?: UseStateHistoryOptions | number
+	options?: UseStateHistoryOptions
 ) => {
-	// Handle backward compatibility (old API accepted maxCapacity as second parameter)
-	const resolvedOptions: UseStateHistoryOptions =
-		typeof options === 'number' ? { maxCapacity: options } : options || {};
-
-	const {
-		maxCapacity,
-		debounceTime,
-		debounceOptions,
-		throttleTime,
-		throttleOptions
-	} = resolvedOptions;
+	const { maxCapacity, debounceTime, debounceOptions } = options || {};
 
 	const initialPresentRef = useRef(initialPresent);
-
 	const [state, dispatch] = useReducer(
 		(state: HistoryState<T>, action: HistoryAction<T>) =>
 			historyReducer(state, action, maxCapacity),
@@ -133,14 +118,20 @@ const useStateHistory = <T>(
 		}
 	);
 
-	const canUndo = size(state.past) !== 0;
 	const canRedo = size(state.future) !== 0;
+	const canUndo = size(state.past) !== 0;
 
-	const undo = useCallback(() => {
-		if (canUndo) {
-			dispatch({ type: 'UNDO' });
-		}
-	}, [canUndo]);
+	const setDirect = useCallback((newPresent: T) => {
+		return dispatch({ type: 'SET', newPresent });
+	}, []);
+
+	const setDebounced = useDebounceFn(
+		(newPresent: T) => {
+			return dispatch({ type: 'SET', newPresent });
+		},
+		debounceTime,
+		debounceOptions
+	);
 
 	const redo = useCallback(() => {
 		if (canRedo) {
@@ -148,72 +139,21 @@ const useStateHistory = <T>(
 		}
 	}, [canRedo]);
 
-	// Create direct set function (no timing modifiers)
-	const setDirect = useCallback(
-		(newPresent: T) => dispatch({ type: 'SET', newPresent }),
-		[]
-	);
-
-	// Set up debounced version of set if needed
-	const debouncedSetRef = useRef<((newPresent: T) => void) | null>(null);
-
-	// Set up throttled version of set if needed
-	const throttledSetRef = useRef<((newPresent: T) => void) | null>(null);
-
-	// Configure debounced/throttled functions based on options
-	useEffect(() => {
-		// Clean up previous timing functions if they exist
-		if (debouncedSetRef.current) {
-			(debouncedSetRef.current as any).cancel?.();
-			debouncedSetRef.current = null;
+	const undo = useCallback(() => {
+		if (canUndo) {
+			dispatch({ type: 'UNDO' });
 		}
+	}, [canUndo]);
 
-		if (throttledSetRef.current) {
-			(throttledSetRef.current as any).cancel?.();
-			throttledSetRef.current = null;
-		}
-
-		// Set up new timing functions based on options
-		if (debounceTime && debounceTime > 0) {
-			debouncedSetRef.current = debounce(
-				(newPresent: T) => dispatch({ type: 'SET', newPresent }),
-				debounceTime,
-				debounceOptions
-			);
-		}
-
-		if (throttleTime && throttleTime > 0) {
-			throttledSetRef.current = throttle(
-				(newPresent: T) => dispatch({ type: 'SET', newPresent }),
-				throttleTime,
-				throttleOptions
-			);
-		}
-
-		// Clean up on unmount
-		return () => {
-			if (debouncedSetRef.current) {
-				(debouncedSetRef.current as any).cancel?.();
-			}
-
-			if (throttledSetRef.current) {
-				(throttledSetRef.current as any).cancel?.();
-			}
-		};
-	}, [debounceTime, throttleTime, debounceOptions, throttleOptions]);
-
-	// Determine which set function to use based on options
 	const set = useCallback(
 		(newPresent: T) => {
-			if (debouncedSetRef.current) {
-				debouncedSetRef.current(newPresent);
-			} else if (throttledSetRef.current) {
-				throttledSetRef.current(newPresent);
+			if (debounceTime) {
+				setDebounced(newPresent);
 			} else {
 				setDirect(newPresent);
 			}
 		},
-		[setDirect]
+		[debounceTime, setDebounced, setDirect]
 	);
 
 	const clear = useCallback(() => {

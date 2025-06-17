@@ -46,4 +46,5 @@ const useDebounceFn = <T extends (...args: any[]) => any>(
 	return debouncedFn.current;
 };
 
+export type { DebounceSettings };
 export default useDebounceFn;

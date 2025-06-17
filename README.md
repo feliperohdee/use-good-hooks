@@ -211,13 +211,13 @@ import { useStateHistory } from 'use-good-hooks/use-state-history';
 
 const TextEditor = () => {
   const {
-    state,
-    setState,
+    canRedo,
+    canUndo,
     history,
-    back,
-    forward,
-    canBack,
-    canForward,
+    redo,
+    setState,
+    state,
+    undo
   } = useStateHistory('', { capacity: 10 });
 
   return (
@@ -229,8 +229,8 @@ const TextEditor = () => {
         cols={50}
       />
       <div>
-        <button onClick={back} disabled={!canBack}>Undo</button>
-        <button onClick={forward} disabled={!canForward}>Redo</button>
+        <button onClick={undo} disabled={!canUndo}>Undo</button>
+        <button onClick={redo} disabled={!canRedo}>Redo</button>
       </div>
       <p>History (last {history.length} changes):</p>
       <pre>{JSON.stringify(history, null, 2)}</pre>
@@ -248,13 +248,13 @@ const TextEditor = () => {
 #### Returns
 
 - Object with:
-    - `state`: The current state value
-    - `setState`: Function to update the state and record history
+    - `canRedo`: Boolean indicating if redo is possible
+    - `canUndo`: Boolean indicating if undo is possible
     - `history`: Array of all recorded states
-    - `back`: Function to move to the previous state (undo)
-    - `forward`: Function to move to the next state (redo)
-    - `canBack`: Boolean indicating if undo is possible
-    - `canForward`: Boolean indicating if redo is possible
+    - `redo`: Function to move to the next state (redo)
+    - `set`: Function to update the state and record history
+    - `state`: The current state value
+    - `undo`: Function to move to the previous state (undo)
 
 ### `useDistinct`
 

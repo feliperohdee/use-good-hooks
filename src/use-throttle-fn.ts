@@ -46,4 +46,5 @@ const useThrottleFn = <T extends (...args: any[]) => any>(
 	return throttledFn.current;
 };
 
+export type { ThrottleSettings };
 export default useThrottleFn;
