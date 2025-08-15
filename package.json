@@ -45,9 +45,9 @@
 	"scripts": {
 		"build": "yarn lint && vite build --mode export",
 		"lint": "prettier --write . && eslint .",
-		"npm-publish": "yarn test --run && yarn build && yarn version --patch --no-git-tag-version && yarn publish --non-interactive",
+		"npm:publish": "yarn test --run && yarn build && yarn version --patch --no-git-tag-version && yarn publish --non-interactive",
 		"test": "vitest",
 		"test:coverage": "vitest --coverage"
 	},
-	"version": "1.0.29"
+	"version": "1.0.30"
 }
