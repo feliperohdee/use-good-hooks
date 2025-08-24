@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import size from 'lodash/size';
 
 import useHistoryState from './use-history-state';
 
@@ -12,9 +11,12 @@ describe('/use-history-state', () => {
 		});
 
 		expect(onChange).not.toHaveBeenCalled();
-		expect(result.current.state).toEqual({ count: 0 });
 		expect(result.current.canUndo).toEqual(false);
 		expect(result.current.canRedo).toEqual(false);
+
+		expect(result.current.past).toEqual([]);
+		expect(result.current.state).toEqual({ count: 0 });
+		expect(result.current.future).toEqual([]);
 	});
 
 	it('should update the state and store history', () => {
@@ -31,10 +33,12 @@ describe('/use-history-state', () => {
 			action: 'SET',
 			state: { count: 1 }
 		});
-		expect(result.current.state).toEqual({ count: 1 });
-		expect(result.current.canUndo).toEqual(true);
 		expect(result.current.canRedo).toEqual(false);
-		expect(result.current.history.past).toEqual([{ count: 0 }]);
+		expect(result.current.canUndo).toEqual(true);
+
+		expect(result.current.past).toEqual([{ count: 0 }]);
+		expect(result.current.state).toEqual({ count: 1 });
+		expect(result.current.future).toEqual([]);
 	});
 
 	it('should undo changes', () => {
@@ -62,11 +66,12 @@ describe('/use-history-state', () => {
 			action: 'UNDO',
 			state: { count: 1 }
 		});
-		expect(result.current.state).toEqual({ count: 1 });
 		expect(result.current.canUndo).toEqual(true);
 		expect(result.current.canRedo).toEqual(true);
-		expect(result.current.history.past).toEqual([{ count: 0 }]);
-		expect(result.current.history.future).toEqual([{ count: 2 }]);
+
+		expect(result.current.past).toEqual([{ count: 0 }]);
+		expect(result.current.state).toEqual({ count: 1 });
+		expect(result.current.future).toEqual([{ count: 2 }]);
 	});
 
 	it('should redo changes', () => {
@@ -105,9 +110,12 @@ describe('/use-history-state', () => {
 			action: 'REDO',
 			state: { count: 2 }
 		});
-		expect(result.current.state).toEqual({ count: 2 });
 		expect(result.current.canUndo).toEqual(true);
 		expect(result.current.canRedo).toEqual(false);
+
+		expect(result.current.past).toEqual([{ count: 0 }, { count: 1 }]);
+		expect(result.current.state).toEqual({ count: 2 });
+		expect(result.current.future).toEqual([]);
 	});
 
 	it('should clear history', () => {
@@ -126,18 +134,19 @@ describe('/use-history-state', () => {
 			action: 'CLEAR',
 			state: { count: 0 }
 		});
-		expect(result.current.state).toEqual({ count: 0 });
 		expect(result.current.canUndo).toEqual(false);
 		expect(result.current.canRedo).toEqual(false);
-		expect(result.current.history.past).toEqual([]);
-		expect(result.current.history.future).toEqual([]);
+
+		expect(result.current.past).toEqual([]);
+		expect(result.current.state).toEqual({ count: 0 });
+		expect(result.current.future).toEqual([]);
 	});
 
 	it('should respect maxCapacity', () => {
 		// Use a maxCapacity of 2
-		const { result } = renderHook(() =>
-			useHistoryState({ count: 0 }, { maxCapacity: 2 })
-		);
+		const { result } = renderHook(() => {
+			return useHistoryState({ count: 0 }, { maxCapacity: 2 });
+		});
 
 		// Add 3 states (initial + 3 new ones)
 		act(() => {
@@ -145,45 +154,36 @@ describe('/use-history-state', () => {
 		});
 
 		// We should have 1 past state
-		expect(result.current.history.past).toEqual([{ count: 0 }]);
+		expect(result.current.past).toEqual([{ count: 0 }]);
 
 		act(() => {
 			result.current.set({ count: 2 });
 		});
 
 		// We should now have 2 past states
-		expect(result.current.history.past).toEqual([
-			{ count: 0 },
-			{ count: 1 }
-		]);
+		expect(result.current.past).toEqual([{ count: 0 }, { count: 1 }]);
 
 		act(() => {
 			result.current.set({ count: 3 });
 		});
 
 		// We've exceeded capacity, should drop the oldest state
+		expect(result.current.past).toEqual([{ count: 1 }, { count: 2 }]);
 		expect(result.current.state).toEqual({ count: 3 });
-		expect(result.current.history.past).toEqual([
-			{ count: 1 },
-			{ count: 2 }
-		]);
-		expect(size(result.current.history.past)).toEqual(2);
 
 		act(() => {
 			result.current.set({ count: 4 });
 		});
 
 		// Should continue to drop the oldest state when adding a new one
-		expect(result.current.history.past).toEqual([
-			{ count: 2 },
-			{ count: 3 }
-		]);
-		expect(size(result.current.history.past)).toEqual(2);
+		expect(result.current.past).toEqual([{ count: 2 }, { count: 3 }]);
 	});
 
 	it('should perform deep copies to avoid reference issues', () => {
 		const initialObject = { nested: { value: 0 } };
-		const { result } = renderHook(() => useHistoryState(initialObject));
+		const { result } = renderHook(() => {
+			return useHistoryState(initialObject);
+		});
 
 		const newObject = { nested: { value: 1 } };
 
@@ -196,10 +196,8 @@ describe('/use-history-state', () => {
 		newObject.nested.value = 200;
 
 		// Our state history should not be affected by these changes
+		expect(result.current.past[0]).toEqual({ nested: { value: 0 } });
 		expect(result.current.state).toEqual({ nested: { value: 1 } });
-		expect(result.current.history.past[0]).toEqual({
-			nested: { value: 0 }
-		});
 	});
 
 	it('should not add to history if new value is equal to current', () => {
@@ -212,7 +210,7 @@ describe('/use-history-state', () => {
 		});
 
 		expect(result.current.canUndo).toEqual(false);
-		expect(result.current.history.past).toEqual([]);
+		expect(result.current.past).toEqual([]);
 	});
 
 	it('should do nothing on undo/redo if not possible', () => {
@@ -272,9 +270,9 @@ describe('/use-history-state', () => {
 		});
 
 		it('should debounce updates with debounceTime option', () => {
-			const { result } = renderHook(() =>
-				useHistoryState({ count: 0 }, { debounceTime: 500 })
-			);
+			const { result } = renderHook(() => {
+				return useHistoryState({ count: 0 }, { debounceTime: 500 });
+			});
 
 			// Set the value to 1
 			act(() => {
@@ -297,17 +295,17 @@ describe('/use-history-state', () => {
 				vi.advanceTimersByTime(500);
 			});
 
+			// Only one history entry should exist despite multiple calls
+			expect(result.current.past).toEqual([{ count: 0 }]);
+
 			// Now value should be updated to the last set value
 			expect(result.current.state).toEqual({ count: 2 });
-
-			// Only one history entry should exist despite multiple calls
-			expect(result.current.history.past).toEqual([{ count: 0 }]);
 		});
 
 		it('should use setDirect to bypass timing controls', () => {
-			const { result } = renderHook(() =>
-				useHistoryState({ count: 0 }, { debounceTime: 500 })
-			);
+			const { result } = renderHook(() => {
+				return useHistoryState({ count: 0 }, { debounceTime: 500 });
+			});
 
 			// Using regular set (should be debounced)
 			act(() => {
@@ -380,7 +378,7 @@ describe('/use-history-state', () => {
 				result.current.set({ count: 1 });
 			});
 
-			expect(result.current.history.past).toEqual([{ count: 0 }]);
+			expect(result.current.past).toEqual([{ count: 0 }]);
 
 			// Pause and set new value
 			act(() => {
@@ -388,10 +386,11 @@ describe('/use-history-state', () => {
 				result.current.set({ count: 2 });
 			});
 
-			// State should update but history should not
-			expect(result.current.state).toEqual({ count: 2 });
-			expect(result.current.history.past).toEqual([{ count: 0 }]);
 			expect(result.current.canUndo).toBe(true); // Should still be able to undo to previous state
+
+			// State should update but history should not
+			expect(result.current.past).toEqual([{ count: 0 }]);
+			expect(result.current.state).toEqual({ count: 2 });
 		});
 
 		it('should resume adding to history after resuming', () => {
@@ -413,11 +412,8 @@ describe('/use-history-state', () => {
 			});
 
 			// History should include the state before pause and after resume
+			expect(result.current.past).toEqual([{ count: 0 }, { count: 2 }]);
 			expect(result.current.state).toEqual({ count: 3 });
-			expect(result.current.history.past).toEqual([
-				{ count: 0 },
-				{ count: 2 }
-			]);
 		});
 
 		it('should maintain pause state through undo/redo operations', () => {
@@ -467,9 +463,9 @@ describe('/use-history-state', () => {
 	describe('immutable option', () => {
 		it('should use reference equality for immutable data', () => {
 			const initialData = { count: 0 };
-			const { result } = renderHook(() =>
-				useHistoryState(initialData, { immutable: true })
-			);
+			const { result } = renderHook(() => {
+				return useHistoryState(initialData, { immutable: true });
+			});
 
 			const newData = { count: 1 };
 
@@ -477,16 +473,16 @@ describe('/use-history-state', () => {
 				result.current.set(newData);
 			});
 
+			expect(result.current.past[0]).toBe(initialData); // Same reference
 			expect(result.current.state).toBe(newData); // Same reference
-			expect(result.current.history.past[0]).toBe(initialData); // Same reference
 		});
 
 		it('should not update when setting same reference for immutable data', () => {
 			const data = { count: 0 };
 			const onChange = vi.fn();
-			const { result } = renderHook(() =>
-				useHistoryState(data, { immutable: true, onChange })
-			);
+			const { result } = renderHook(() => {
+				return useHistoryState(data, { immutable: true, onChange });
+			});
 
 			act(() => {
 				result.current.set(data); // Same reference
@@ -494,16 +490,16 @@ describe('/use-history-state', () => {
 
 			expect(onChange).not.toHaveBeenCalled();
 			expect(result.current.canUndo).toBe(false);
-			expect(result.current.history.past).toEqual([]);
+			expect(result.current.past).toEqual([]);
 		});
 
 		it('should update when setting different reference for immutable data', () => {
 			const data1 = { count: 0 };
 			const data2 = { count: 0 }; // Same value, different reference
 			const onChange = vi.fn();
-			const { result } = renderHook(() =>
-				useHistoryState(data1, { immutable: true, onChange })
-			);
+			const { result } = renderHook(() => {
+				return useHistoryState(data1, { immutable: true, onChange });
+			});
 
 			act(() => {
 				result.current.set(data2);
@@ -513,33 +509,35 @@ describe('/use-history-state', () => {
 				action: 'SET',
 				state: data2
 			});
+			expect(result.current.past[0]).toBe(data1);
 			expect(result.current.state).toBe(data2);
-			expect(result.current.history.past[0]).toBe(data1);
 		});
 
 		it('should work with primitive immutable values', () => {
-			const { result } = renderHook(() =>
-				useHistoryState(0, { immutable: true })
-			);
+			const { result } = renderHook(() => {
+				return useHistoryState(0, { immutable: true });
+			});
 
 			act(() => {
 				result.current.set(1);
 			});
 
+			expect(result.current.past[0]).toBe(0);
 			expect(result.current.state).toBe(1);
-			expect(result.current.history.past[0]).toBe(0);
 
 			// Setting same value should not update
 			act(() => {
 				result.current.set(1);
 			});
 
-			expect(result.current.history.past).toEqual([0]); // No new history entry
+			expect(result.current.past).toEqual([0]); // No new history entry
 		});
 
 		it('should perform deep copy when immutable is false (default)', () => {
 			const initialData = { nested: { value: 0 } };
-			const { result } = renderHook(() => useHistoryState(initialData));
+			const { result } = renderHook(() => {
+				return useHistoryState(initialData);
+			});
 
 			const newData = { nested: { value: 1 } };
 
@@ -548,10 +546,11 @@ describe('/use-history-state', () => {
 			});
 
 			// Should be deep copies, not same references
+			expect(result.current.past[0]).not.toBe(initialData);
+			expect(result.current.past[0]).toEqual(initialData);
+
 			expect(result.current.state).not.toBe(newData);
 			expect(result.current.state).toEqual(newData);
-			expect(result.current.history.past[0]).not.toBe(initialData);
-			expect(result.current.history.past[0]).toEqual(initialData);
 		});
 
 		it('should use JSON.stringify for equality when immutable is false', () => {
@@ -565,7 +564,7 @@ describe('/use-history-state', () => {
 			});
 
 			expect(result.current.canUndo).toBe(false);
-			expect(result.current.history.past).toEqual([]);
+			expect(result.current.past).toEqual([]);
 		});
 	});
 });

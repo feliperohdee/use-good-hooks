@@ -269,10 +269,8 @@ const useHistoryState = <T>(
 		canRedo,
 		canUndo,
 		clear,
-		history: {
-			past: state.past,
-			future: state.future
-		},
+		future: state.future,
+		past: state.past,
 		pause,
 		paused: state.paused,
 		redo,
