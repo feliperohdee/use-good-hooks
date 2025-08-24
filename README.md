@@ -243,16 +243,26 @@ const TextEditor = () => {
 
 - `initialState`: The initial state value
 - `options`: (Optional) Configuration options:
-    - `capacity`: Maximum number of history entries to keep (default: 10)
+    - `debounceSettings`: Debounce settings object (default: { leading: true, trailing: false })
+    - `debounceTime`: Time in milliseconds to debounce the state changes (default: 0)
+    - `immutable`: Boolean indicating if the state should be treated as immutable (default: false)
+    - `maxCapacity`: Maximum number of history entries to keep (default: 10)
+    - `onChange`: Function to call when the state changes
+    - `paused`: Boolean indicating if the history is paused (default: false)
 
 #### Returns
 
 - Object with:
     - `canRedo`: Boolean indicating if redo is possible
     - `canUndo`: Boolean indicating if undo is possible
-    - `history`: Array of all recorded states
+    - `clear`: Function to clear the history
+    - `future`: Array of future states
+    - `past`: Array of past states
+    - `pause`: Function to pause the history
+    - `paused`: Boolean indicating if the history is paused
     - `redo`: Function to move to the next state (redo)
     - `set`: Function to update the state and record history
+    - `setDirect`: Function to update the state without recording history
     - `state`: The current state value
     - `undo`: Function to move to the previous state (undo)
 

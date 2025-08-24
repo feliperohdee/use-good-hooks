@@ -7,7 +7,7 @@ import type { DebounceSettings } from 'lodash';
 import useDebounceFn from './use-debounce-fn';
 
 type HistoryAction<T> =
-	| { type: 'CLEAR'; initialPresent: T }
+	| { type: 'CLEAR'; initialState: T }
 	| { type: 'PAUSE' }
 	| { type: 'REDO' }
 	| { type: 'RESUME' }
@@ -35,12 +35,12 @@ type UseHistoryOptionsState<T> = {
 	immutable?: boolean;
 	maxCapacity?: number;
 	onChange?: HistoryOnChange<T>;
+	paused?: boolean;
 };
 
 const initialHistoryState = {
 	future: [],
 	past: [],
-	paused: false,
 	present: null
 };
 
@@ -174,7 +174,7 @@ const historyReducer = <T>({
 			future: [],
 			past: [],
 			paused,
-			present: cloneValue(action.initialPresent, immutable)
+			present: cloneValue(action.initialState, immutable)
 		};
 
 		onChange?.({
@@ -189,13 +189,13 @@ const historyReducer = <T>({
 };
 
 const useHistoryState = <T>(
-	initialPresent: T,
+	initialState: T,
 	options?: UseHistoryOptionsState<T>
 ) => {
 	const { maxCapacity, debounceTime, debounceSettings, onChange, immutable } =
 		options || {};
 
-	const initialPresentRef = useRef(initialPresent);
+	const initialStateRef = useRef(initialState);
 	const [state, dispatch] = useReducer(
 		(state: HistoryState<T>, action: HistoryAction<T>) => {
 			return historyReducer({
@@ -208,7 +208,8 @@ const useHistoryState = <T>(
 		},
 		{
 			...initialHistoryState,
-			present: cloneValue(initialPresentRef.current, immutable)
+			paused: options?.paused ?? false,
+			present: cloneValue(initialStateRef.current, immutable)
 		}
 	);
 
@@ -217,7 +218,7 @@ const useHistoryState = <T>(
 
 	const clear = useCallback(() => {
 		return dispatch({
-			initialPresent: initialPresentRef.current,
+			initialState: initialStateRef.current,
 			type: 'CLEAR'
 		});
 	}, []);
