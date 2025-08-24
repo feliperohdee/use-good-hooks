@@ -335,4 +335,237 @@ describe('/use-history-state', () => {
 			expect(result.current.state).toEqual({ count: 1 });
 		});
 	});
+
+	describe('pause and resume functionality', () => {
+		it('should start in unpaused state', () => {
+			const { result } = renderHook(() => {
+				return useHistoryState({ count: 0 });
+			});
+
+			expect(result.current.paused).toBe(false);
+		});
+
+		it('should pause history tracking', () => {
+			const { result } = renderHook(() => {
+				return useHistoryState({ count: 0 });
+			});
+
+			act(() => {
+				result.current.pause();
+			});
+
+			expect(result.current.paused).toBe(true);
+		});
+
+		it('should resume history tracking', () => {
+			const { result } = renderHook(() => {
+				return useHistoryState({ count: 0 });
+			});
+
+			act(() => {
+				result.current.pause();
+				result.current.resume();
+			});
+
+			expect(result.current.paused).toBe(false);
+		});
+
+		it('should not add to history when paused', () => {
+			const { result } = renderHook(() => {
+				return useHistoryState({ count: 0 });
+			});
+
+			// Add initial state
+			act(() => {
+				result.current.set({ count: 1 });
+			});
+
+			expect(result.current.history.past).toEqual([{ count: 0 }]);
+
+			// Pause and set new value
+			act(() => {
+				result.current.pause();
+				result.current.set({ count: 2 });
+			});
+
+			// State should update but history should not
+			expect(result.current.state).toEqual({ count: 2 });
+			expect(result.current.history.past).toEqual([{ count: 0 }]);
+			expect(result.current.canUndo).toBe(true); // Should still be able to undo to previous state
+		});
+
+		it('should resume adding to history after resuming', () => {
+			const { result } = renderHook(() => {
+				return useHistoryState({ count: 0 });
+			});
+
+			// Add initial state
+			act(() => {
+				result.current.set({ count: 1 });
+			});
+
+			// Pause, set value, then resume and set again
+			act(() => {
+				result.current.pause();
+				result.current.set({ count: 2 });
+				result.current.resume();
+				result.current.set({ count: 3 });
+			});
+
+			// History should include the state before pause and after resume
+			expect(result.current.state).toEqual({ count: 3 });
+			expect(result.current.history.past).toEqual([
+				{ count: 0 },
+				{ count: 2 }
+			]);
+		});
+
+		it('should maintain pause state through undo/redo operations', () => {
+			const { result } = renderHook(() => {
+				return useHistoryState({ count: 0 });
+			});
+
+			// Add some history
+			act(() => {
+				result.current.set({ count: 1 });
+				result.current.set({ count: 2 });
+			});
+
+			// Pause and perform undo/redo
+			act(() => {
+				result.current.pause();
+				result.current.undo();
+			});
+
+			expect(result.current.paused).toBe(true);
+			expect(result.current.state).toEqual({ count: 1 });
+
+			act(() => {
+				result.current.redo();
+			});
+
+			expect(result.current.paused).toBe(true);
+			expect(result.current.state).toEqual({ count: 2 });
+		});
+
+		it('should maintain pause state through clear operation', () => {
+			const { result } = renderHook(() => {
+				return useHistoryState({ count: 0 });
+			});
+
+			act(() => {
+				result.current.set({ count: 1 });
+				result.current.pause();
+				result.current.clear();
+			});
+
+			expect(result.current.paused).toBe(true);
+			expect(result.current.state).toEqual({ count: 0 });
+		});
+	});
+
+	describe('immutable option', () => {
+		it('should use reference equality for immutable data', () => {
+			const initialData = { count: 0 };
+			const { result } = renderHook(() =>
+				useHistoryState(initialData, { immutable: true })
+			);
+
+			const newData = { count: 1 };
+
+			act(() => {
+				result.current.set(newData);
+			});
+
+			expect(result.current.state).toBe(newData); // Same reference
+			expect(result.current.history.past[0]).toBe(initialData); // Same reference
+		});
+
+		it('should not update when setting same reference for immutable data', () => {
+			const data = { count: 0 };
+			const onChange = vi.fn();
+			const { result } = renderHook(() =>
+				useHistoryState(data, { immutable: true, onChange })
+			);
+
+			act(() => {
+				result.current.set(data); // Same reference
+			});
+
+			expect(onChange).not.toHaveBeenCalled();
+			expect(result.current.canUndo).toBe(false);
+			expect(result.current.history.past).toEqual([]);
+		});
+
+		it('should update when setting different reference for immutable data', () => {
+			const data1 = { count: 0 };
+			const data2 = { count: 0 }; // Same value, different reference
+			const onChange = vi.fn();
+			const { result } = renderHook(() =>
+				useHistoryState(data1, { immutable: true, onChange })
+			);
+
+			act(() => {
+				result.current.set(data2);
+			});
+
+			expect(onChange).toHaveBeenCalledWith({
+				action: 'SET',
+				state: data2
+			});
+			expect(result.current.state).toBe(data2);
+			expect(result.current.history.past[0]).toBe(data1);
+		});
+
+		it('should work with primitive immutable values', () => {
+			const { result } = renderHook(() =>
+				useHistoryState(0, { immutable: true })
+			);
+
+			act(() => {
+				result.current.set(1);
+			});
+
+			expect(result.current.state).toBe(1);
+			expect(result.current.history.past[0]).toBe(0);
+
+			// Setting same value should not update
+			act(() => {
+				result.current.set(1);
+			});
+
+			expect(result.current.history.past).toEqual([0]); // No new history entry
+		});
+
+		it('should perform deep copy when immutable is false (default)', () => {
+			const initialData = { nested: { value: 0 } };
+			const { result } = renderHook(() => useHistoryState(initialData));
+
+			const newData = { nested: { value: 1 } };
+
+			act(() => {
+				result.current.set(newData);
+			});
+
+			// Should be deep copies, not same references
+			expect(result.current.state).not.toBe(newData);
+			expect(result.current.state).toEqual(newData);
+			expect(result.current.history.past[0]).not.toBe(initialData);
+			expect(result.current.history.past[0]).toEqual(initialData);
+		});
+
+		it('should use JSON.stringify for equality when immutable is false', () => {
+			const { result } = renderHook(() => {
+				return useHistoryState({ count: 0 });
+			});
+
+			// Different objects with same content
+			act(() => {
+				result.current.set({ count: 0 });
+			});
+
+			expect(result.current.canUndo).toBe(false);
+			expect(result.current.history.past).toEqual([]);
+		});
+	});
 });

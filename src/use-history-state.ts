@@ -8,7 +8,9 @@ import useDebounceFn from './use-debounce-fn';
 
 type HistoryAction<T> =
 	| { type: 'CLEAR'; initialPresent: T }
+	| { type: 'PAUSE' }
 	| { type: 'REDO' }
+	| { type: 'RESUME' }
 	| { type: 'SET'; newPresent: T }
 	| { type: 'UNDO' };
 
@@ -23,36 +25,59 @@ type HistoryOnChange<T> = ({
 type HistoryState<T> = {
 	future: T[];
 	past: T[];
+	paused: boolean;
 	present: T | null;
 };
 
 type UseHistoryOptionsState<T> = {
 	debounceSettings?: DebounceSettings;
 	debounceTime?: number;
+	immutable?: boolean;
 	maxCapacity?: number;
 	onChange?: HistoryOnChange<T>;
 };
 
 const initialHistoryState = {
+	future: [],
 	past: [],
-	present: null,
-	future: []
+	paused: false,
+	present: null
+};
+
+const cloneValue = <T>(value: T, immutable?: boolean): T => {
+	return immutable ? value : cloneDeep(value);
+};
+
+const valuesEqual = <T>(a: T, b: T, immutable?: boolean): boolean => {
+	return immutable ? a === b : JSON.stringify(a) === JSON.stringify(b);
 };
 
 const historyReducer = <T>({
 	action,
+	immutable,
 	maxCapacity,
 	onChange,
 	state
 }: {
 	action: HistoryAction<T>;
+	immutable?: boolean;
 	maxCapacity?: number;
 	onChange?: HistoryOnChange<T>;
 	state: HistoryState<T>;
 }): HistoryState<T> => {
-	const { past, present, future } = state;
+	const { future, past, paused, present } = state;
 
-	if (action.type === 'UNDO') {
+	if (action.type === 'PAUSE') {
+		return {
+			...state,
+			paused: true
+		};
+	} else if (action.type === 'RESUME') {
+		return {
+			...state,
+			paused: false
+		};
+	} else if (action.type === 'UNDO') {
 		if (size(past) === 0) {
 			return state;
 		}
@@ -60,9 +85,10 @@ const historyReducer = <T>({
 		const previous = past[size(past) - 1];
 		const newPast = past.slice(0, size(past) - 1);
 		const newState = {
+			future: [cloneValue(present as T, immutable), ...future],
 			past: newPast,
-			present: cloneDeep(previous),
-			future: [cloneDeep(present as T), ...future]
+			paused,
+			present: cloneValue(previous, immutable)
 		};
 
 		onChange?.({
@@ -79,9 +105,10 @@ const historyReducer = <T>({
 		const next = future[0];
 		const newFuture = future.slice(1);
 		const newState = {
-			past: [...past, cloneDeep(present as T)],
-			present: cloneDeep(next),
-			future: newFuture
+			future: newFuture,
+			past: [...past, cloneValue(present as T, immutable)],
+			paused,
+			present: cloneValue(next, immutable)
 		};
 
 		onChange?.({
@@ -94,15 +121,30 @@ const historyReducer = <T>({
 		const { newPresent } = action;
 
 		// Avoid unnecessary updates if values are equal
-		if (JSON.stringify(newPresent) === JSON.stringify(present)) {
+		if (valuesEqual(newPresent, present, immutable)) {
 			return state;
+		}
+
+		// Update present immediately but don't add to history if paused
+		if (paused) {
+			const newState = {
+				...state,
+				present: cloneValue(newPresent, immutable)
+			};
+
+			onChange?.({
+				action: action.type,
+				state: newState.present
+			});
+
+			return newState;
 		}
 
 		// Create new past array with capacity limit
 		let newPast = [...past];
 
 		if (present !== null) {
-			newPast = [...newPast, cloneDeep(present)];
+			newPast = [...newPast, cloneValue(present, immutable)];
 		}
 
 		// Remove oldest entries if max capacity is reached
@@ -115,9 +157,10 @@ const historyReducer = <T>({
 		}
 
 		const newState = {
+			future: [],
 			past: newPast,
-			present: cloneDeep(newPresent),
-			future: []
+			paused,
+			present: cloneValue(newPresent, immutable)
 		};
 
 		onChange?.({
@@ -128,9 +171,10 @@ const historyReducer = <T>({
 		return newState;
 	} else if (action.type === 'CLEAR') {
 		const newState = {
+			future: [],
 			past: [],
-			present: cloneDeep(action.initialPresent),
-			future: []
+			paused,
+			present: cloneValue(action.initialPresent, immutable)
 		};
 
 		onChange?.({
@@ -148,7 +192,7 @@ const useHistoryState = <T>(
 	initialPresent: T,
 	options?: UseHistoryOptionsState<T>
 ) => {
-	const { maxCapacity, debounceTime, debounceSettings, onChange } =
+	const { maxCapacity, debounceTime, debounceSettings, onChange, immutable } =
 		options || {};
 
 	const initialPresentRef = useRef(initialPresent);
@@ -156,6 +200,7 @@ const useHistoryState = <T>(
 		(state: HistoryState<T>, action: HistoryAction<T>) => {
 			return historyReducer({
 				action,
+				immutable,
 				maxCapacity,
 				onChange,
 				state
@@ -163,7 +208,7 @@ const useHistoryState = <T>(
 		},
 		{
 			...initialHistoryState,
-			present: cloneDeep(initialPresentRef.current)
+			present: cloneValue(initialPresentRef.current, immutable)
 		}
 	);
 
@@ -175,6 +220,14 @@ const useHistoryState = <T>(
 			initialPresent: initialPresentRef.current,
 			type: 'CLEAR'
 		});
+	}, []);
+
+	const pause = useCallback(() => {
+		dispatch({ type: 'PAUSE' });
+	}, []);
+
+	const resume = useCallback(() => {
+		dispatch({ type: 'RESUME' });
 	}, []);
 
 	const redo = useCallback(() => {
@@ -220,7 +273,10 @@ const useHistoryState = <T>(
 			past: state.past,
 			future: state.future
 		},
+		pause,
+		paused: state.paused,
 		redo,
+		resume,
 		set,
 		setDirect,
 		state: state.present as T,

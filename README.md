@@ -218,7 +218,7 @@ const TextEditor = () => {
     setState,
     state,
     undo
-  } = useHistoryState('', { capacity: 10 });
+  } = useHistoryState('', { maxCapacity: 10 });
 
   return (
     <div>
