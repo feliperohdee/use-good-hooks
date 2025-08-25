@@ -10,6 +10,7 @@ type HistoryAction<T> =
 	| { type: 'CLEAR'; initialState: T }
 	| { type: 'PAUSE' }
 	| { type: 'REDO' }
+	| { type: 'REPLACE'; newPresent: T }
 	| { type: 'RESUME' }
 	| { type: 'SET'; newPresent: T }
 	| { type: 'UNDO' };
@@ -67,28 +68,12 @@ const historyReducer = <T>({
 }): HistoryState<T> => {
 	const { future, past, paused, present } = state;
 
-	if (action.type === 'PAUSE') {
-		return {
-			...state,
-			paused: true
-		};
-	} else if (action.type === 'RESUME') {
-		return {
-			...state,
-			paused: false
-		};
-	} else if (action.type === 'UNDO') {
-		if (size(past) === 0) {
-			return state;
-		}
-
-		const previous = past[size(past) - 1];
-		const newPast = past.slice(0, size(past) - 1);
+	if (action.type === 'CLEAR') {
 		const newState = {
-			future: [cloneValue(present as T, immutable), ...future],
-			past: newPast,
+			future: [],
+			past: [],
 			paused,
-			present: cloneValue(previous, immutable)
+			present: cloneValue(action.initialState, immutable)
 		};
 
 		onChange?.({
@@ -97,6 +82,11 @@ const historyReducer = <T>({
 		});
 
 		return newState;
+	} else if (action.type === 'PAUSE') {
+		return {
+			...state,
+			paused: true
+		};
 	} else if (action.type === 'REDO') {
 		if (size(future) === 0) {
 			return state;
@@ -109,6 +99,26 @@ const historyReducer = <T>({
 			past: [...past, cloneValue(present as T, immutable)],
 			paused,
 			present: cloneValue(next, immutable)
+		};
+
+		onChange?.({
+			action: action.type,
+			state: newState.present
+		});
+
+		return newState;
+	} else if (action.type === 'RESUME') {
+		return {
+			...state,
+			paused: false
+		};
+	} else if (action.type === 'REPLACE') {
+		const { newPresent } = action;
+		const newState = {
+			...state,
+			future: [],
+			past: [],
+			present: newPresent
 		};
 
 		onChange?.({
@@ -169,12 +179,18 @@ const historyReducer = <T>({
 		});
 
 		return newState;
-	} else if (action.type === 'CLEAR') {
+	} else if (action.type === 'UNDO') {
+		if (size(past) === 0) {
+			return state;
+		}
+
+		const previous = past[size(past) - 1];
+		const newPast = past.slice(0, size(past) - 1);
 		const newState = {
-			future: [],
-			past: [],
+			future: [cloneValue(present as T, immutable), ...future],
+			past: newPast,
 			paused,
-			present: cloneValue(action.initialState, immutable)
+			present: cloneValue(previous, immutable)
 		};
 
 		onChange?.({
@@ -226,16 +242,19 @@ const useHistoryState = <T>(
 	const pause = useCallback(() => {
 		dispatch({ type: 'PAUSE' });
 	}, []);
-
-	const resume = useCallback(() => {
-		dispatch({ type: 'RESUME' });
-	}, []);
-
 	const redo = useCallback(() => {
 		if (canRedo) {
 			dispatch({ type: 'REDO' });
 		}
 	}, [canRedo]);
+
+	const replace = useCallback((newPresent: T) => {
+		dispatch({ type: 'REPLACE', newPresent });
+	}, []);
+
+	const resume = useCallback(() => {
+		dispatch({ type: 'RESUME' });
+	}, []);
 
 	const setDebounced = useDebounceFn(
 		(newPresent: T) => {
@@ -249,12 +268,6 @@ const useHistoryState = <T>(
 		return dispatch({ type: 'SET', newPresent });
 	}, []);
 
-	const undo = useCallback(() => {
-		if (canUndo) {
-			dispatch({ type: 'UNDO' });
-		}
-	}, [canUndo]);
-
 	const set = useCallback(
 		(newPresent: T) => {
 			if (debounceTime) {
@@ -266,6 +279,12 @@ const useHistoryState = <T>(
 		[debounceTime, setDebounced, setDirect]
 	);
 
+	const undo = useCallback(() => {
+		if (canUndo) {
+			dispatch({ type: 'UNDO' });
+		}
+	}, [canUndo]);
+
 	return {
 		canRedo,
 		canUndo,
@@ -275,6 +294,7 @@ const useHistoryState = <T>(
 		pause,
 		paused: state.paused,
 		redo,
+		replace,
 		resume,
 		set,
 		setDirect,

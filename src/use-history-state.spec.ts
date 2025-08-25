@@ -142,6 +142,36 @@ describe('/use-history-state', () => {
 		expect(result.current.future).toEqual([]);
 	});
 
+	it('should replace the state', () => {
+		const { result } = renderHook(() => {
+			return useHistoryState({ count: 0 });
+		});
+
+		act(() => {
+			result.current.replace({ count: 1 });
+		});
+
+		expect(result.current.state).toEqual({ count: 1 });
+		expect(result.current.past).toEqual([]);
+		expect(result.current.future).toEqual([]);
+
+		act(() => {
+			result.current.set({ count: 2 });
+		});
+
+		expect(result.current.state).toEqual({ count: 2 });
+		expect(result.current.past).toEqual([{ count: 1 }]);
+		expect(result.current.future).toEqual([]);
+
+		act(() => {
+			result.current.replace({ count: 3 });
+		});
+
+		expect(result.current.state).toEqual({ count: 3 });
+		expect(result.current.past).toEqual([]);
+		expect(result.current.future).toEqual([]);
+	});
+
 	it('should respect maxCapacity', () => {
 		// Use a maxCapacity of 2
 		const { result } = renderHook(() => {
