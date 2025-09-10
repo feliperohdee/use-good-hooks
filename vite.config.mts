@@ -11,6 +11,7 @@ export default defineConfig(env => {
 		'./src/use-distinct.ts',
 		'./src/use-global-state.ts',
 		'./src/use-history-state.ts',
+		'./src/use-late-state.ts',
 		'./src/use-prev.ts',
 		'./src/use-storage-state.ts',
 		'./src/use-temporary-state.ts',
