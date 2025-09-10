@@ -299,9 +299,9 @@ describe('/use-history-state', () => {
 			vi.restoreAllMocks();
 		});
 
-		it('should debounce updates with debounceTime option', () => {
+		it('should debounce updates with debounceMs option', () => {
 			const { result } = renderHook(() => {
-				return useHistoryState({ count: 0 }, { debounceTime: 500 });
+				return useHistoryState({ count: 0 }, { debounceMs: 500 });
 			});
 
 			// Set the value to 1
@@ -334,7 +334,7 @@ describe('/use-history-state', () => {
 
 		it('should use setDirect to bypass timing controls', () => {
 			const { result } = renderHook(() => {
-				return useHistoryState({ count: 0 }, { debounceTime: 500 });
+				return useHistoryState({ count: 0 }, { debounceMs: 500 });
 			});
 
 			// Using regular set (should be debounced)

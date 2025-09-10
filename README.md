@@ -243,8 +243,8 @@ const TextEditor = () => {
 
 - `initialState`: The initial state value
 - `options`: (Optional) Configuration options:
+    - `debounceMs`: Time in milliseconds to debounce the state changes (default: 0)
     - `debounceSettings`: Debounce settings object (default: { leading: true, trailing: false })
-    - `debounceTime`: Time in milliseconds to debounce the state changes (default: 0)
     - `immutable`: Boolean indicating if the state should be treated as immutable (default: false)
     - `maxCapacity`: Maximum number of history entries to keep (default: 10)
     - `onChange`: Function to call when the state changes
@@ -516,13 +516,60 @@ const [state, setState] = useTemporaryState('initial', 1000);
 #### Parameters
 
 - `initialState`: The initial state value
-- `timeout`: The timeout duration in milliseconds (default: 3000)
+- `ms`: The timeout duration in milliseconds (default: 3000)
 
 #### Returns
 
 - Array with:
     - `state`: The current state
     - `setState`: Function to update state
+
+### `useLateState`
+
+Delays the update of a state value until a specified time has passed. This is useful for scenarios where you want to introduce a delay before a state change takes effect, such as showing a loading spinner for a minimum amount of time.
+
+```typescript
+import useLateState from 'use-good-hooks/use-late-state';
+
+const DelayedComponent = () => {
+  const [status, setStatus, cancelUpdate] = useLateState('Waiting...', 2000); // 2-second delay
+
+  const handleUpdate = () => {
+    setStatus('Updated!');
+  };
+
+  const handleImmediateUpdate = () => {
+    setStatus('Immediately Updated!', true);
+  };
+
+  const handleCancel = () => {
+    const wasCancelled = cancelUpdate();
+    if (wasCancelled) {
+      alert('Update cancelled!');
+    }
+  };
+
+  return (
+    <div>
+      <p>Status: {status}</p>
+      <button onClick={handleUpdate}>Update after 2s</button>
+      <button onClick={handleImmediateUpdate}>Update Immediately</button>
+      <button onClick={handleCancel}>Cancel Update</button>
+    </div>
+  );
+};
+```
+
+#### Parameters
+
+- `initial`: The initial value of the state.
+- `delay`: The delay in milliseconds before the state is updated.
+
+#### Returns
+
+- `value`: The current state value.
+- `setLate`: A function to update the state after the specified delay. It can also accept a second boolean argument to update the state immediately.
+- `cancel`: A function to cancel a pending state update.
 
 ## 🧪 Running Tests
 
@@ -549,6 +596,7 @@ Each hook in this library is designed with performance in mind:
 4. `useUrlState` efficiently handles URL synchronization with debouncing
 5. `useGlobalState` and `createGlobalState` provide a way to share state across components with automatic synchronization
 6. `useTemporaryState` allows for temporary state that resets after a timeout
+7. `useLateState` provides a mechanism to delay state updates, which can be useful for managing UI transitions and asynchronous operations.
 
 ## 🛠️ Development
 

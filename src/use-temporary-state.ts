@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-const useTemporaryState = <T>(initialState: T, timeout: number) => {
+const useTemporaryState = <T>(initialState: T, ms: number) => {
 	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 	const [state, setState] = useState(initialState);
 
@@ -8,12 +8,12 @@ const useTemporaryState = <T>(initialState: T, timeout: number) => {
 		clearTimeout(timeoutRef.current!);
 		timeoutRef.current = setTimeout(() => {
 			setState(initialState);
-		}, timeout);
+		}, ms);
 
 		return () => {
 			clearTimeout(timeoutRef.current!);
 		};
-	}, [initialState, state, timeout]);
+	}, [initialState, state, ms]);
 
 	return [state, setState] as const;
 };

@@ -32,7 +32,7 @@ type HistoryState<T> = {
 
 type UseHistoryOptionsState<T> = {
 	debounceSettings?: DebounceSettings;
-	debounceTime?: number;
+	debounceMs?: number;
 	immutable?: boolean;
 	maxCapacity?: number;
 	onChange?: HistoryOnChange<T>;
@@ -208,7 +208,7 @@ const useHistoryState = <T>(
 	initialState: T,
 	options?: UseHistoryOptionsState<T>
 ) => {
-	const { maxCapacity, debounceTime, debounceSettings, onChange, immutable } =
+	const { maxCapacity, debounceMs, debounceSettings, onChange, immutable } =
 		options || {};
 
 	const initialStateRef = useRef(initialState);
@@ -260,7 +260,7 @@ const useHistoryState = <T>(
 		(newPresent: T) => {
 			return dispatch({ type: 'SET', newPresent });
 		},
-		debounceTime,
+		debounceMs,
 		debounceSettings
 	);
 
@@ -270,13 +270,13 @@ const useHistoryState = <T>(
 
 	const set = useCallback(
 		(newPresent: T) => {
-			if (debounceTime) {
+			if (debounceMs) {
 				setDebounced(newPresent);
 			} else {
 				setDirect(newPresent);
 			}
 		},
-		[debounceTime, setDebounced, setDirect]
+		[debounceMs, setDebounced, setDirect]
 	);
 
 	const undo = useCallback(() => {

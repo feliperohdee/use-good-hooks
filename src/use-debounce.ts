@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import debounce from 'lodash/debounce';
 
-const DEFAULT_DELAY = 300;
-const useDebounce = <T>(value: T, delay = DEFAULT_DELAY): T => {
+const DEFAULT_MS = 300;
+const useDebounce = <T>(value: T, ms = DEFAULT_MS): T => {
 	const [debouncedValue, setDebouncedValue] = useState<T>(value);
 	const debounceRef = useRef(
 		debounce((newValue: T) => {
 			setDebouncedValue(newValue);
-		}, delay)
+		}, ms)
 	);
 
 	useEffect(() => {
