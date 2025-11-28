@@ -215,7 +215,7 @@ const TextEditor = () => {
     canUndo,
     history,
     redo,
-    setState,
+    set,
     state,
     undo
   } = useHistoryState('', { maxCapacity: 10 });
@@ -224,7 +224,7 @@ const TextEditor = () => {
     <div>
       <textarea
         value={state}
-        onChange={(e) => setState(e.target.value)}
+        onChange={(e) => set(e.target.value)}
         rows={4}
         cols={50}
       />
