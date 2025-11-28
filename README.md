@@ -262,7 +262,6 @@ const TextEditor = () => {
     - `paused`: Boolean indicating if the history is paused
     - `redo`: Function to move to the next state (redo)
     - `set`: Function to update the state and record history
-    - `setDirect`: Function to update the state without recording history
     - `state`: The current state value
     - `undo`: Function to move to the previous state (undo)
 
