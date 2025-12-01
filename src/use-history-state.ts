@@ -1,10 +1,8 @@
-import { useCallback, useEffect, useReducer, useRef } from 'react';
+import { useEffect, useMemo, useReducer, useRef } from 'react';
 import cloneDeep from 'lodash/cloneDeep';
-import isNil from 'lodash/isNil';
+import debounce from 'lodash/debounce';
 import size from 'lodash/size';
 import type { DebounceSettings } from 'lodash';
-
-import useDebounceFn from './use-debounce-fn';
 
 type HistoryAction<T> =
 	| { type: 'CLEAR'; initialState: T }
@@ -30,9 +28,9 @@ type HistoryState<T> = {
 	present: T | null;
 };
 
-type UseHistoryOptionsState<T> = {
-	debounceSettings?: DebounceSettings;
+type HistoryOptions<T> = {
 	debounceMs?: number;
+	debounceSettings?: DebounceSettings;
 	immutable?: boolean;
 	maxCapacity?: number;
 	onChange?: HistoryOnChange<T>;
@@ -53,17 +51,17 @@ const valuesEqual = <T>(a: T, b: T, immutable?: boolean): boolean => {
 	return immutable ? a === b : JSON.stringify(a) === JSON.stringify(b);
 };
 
-const useHistoryState = <T>(
-	initialState: T,
-	options?: UseHistoryOptionsState<T>
-) => {
-	const { maxCapacity, debounceMs, debounceSettings, onChange, immutable } =
-		options || {};
-
+const useHistoryState = <T>(initialState: T, options?: HistoryOptions<T>) => {
 	const initialStateRef = useRef(initialState);
-	const onChangeRef = useRef(onChange);
+	const optionsRef = useRef(options ?? {});
 	const [state, dispatch] = useReducer(
 		(state: HistoryState<T>, action: HistoryAction<T>) => {
+			const {
+				immutable = true,
+				maxCapacity = 10,
+				onChange = () => null
+			} = optionsRef.current;
+
 			const { future, past, paused, present } = state;
 
 			if (action.type === 'CLEAR') {
@@ -74,7 +72,7 @@ const useHistoryState = <T>(
 					present: cloneValue(action.initialState, immutable)
 				};
 
-				onChangeRef.current?.({
+				onChange({
 					action: action.type,
 					state: newState.present
 				});
@@ -99,7 +97,7 @@ const useHistoryState = <T>(
 					present: cloneValue(next, immutable)
 				};
 
-				onChangeRef.current?.({
+				onChange({
 					action: action.type,
 					state: newState.present
 				});
@@ -119,7 +117,7 @@ const useHistoryState = <T>(
 					present: newPresent
 				};
 
-				onChangeRef.current?.({
+				onChange({
 					action: action.type,
 					state: newState.present
 				});
@@ -140,7 +138,7 @@ const useHistoryState = <T>(
 						present: cloneValue(newPresent, immutable)
 					};
 
-					onChangeRef.current?.({
+					onChange({
 						action: action.type,
 						state: newState.present
 					});
@@ -156,11 +154,7 @@ const useHistoryState = <T>(
 				}
 
 				// Remove oldest entries if max capacity is reached
-				if (
-					!isNil(maxCapacity) &&
-					maxCapacity > 0 &&
-					size(newPast) > maxCapacity
-				) {
+				if (maxCapacity > 0 && size(newPast) > maxCapacity) {
 					newPast = newPast.slice(size(newPast) - maxCapacity);
 				}
 
@@ -171,7 +165,7 @@ const useHistoryState = <T>(
 					present: cloneValue(newPresent, immutable)
 				};
 
-				onChangeRef.current?.({
+				onChange({
 					action: action.type,
 					state: newState.present
 				});
@@ -191,7 +185,7 @@ const useHistoryState = <T>(
 					present: cloneValue(previous, immutable)
 				};
 
-				onChangeRef.current?.({
+				onChange({
 					action: action.type,
 					state: newState.present
 				});
@@ -203,89 +197,81 @@ const useHistoryState = <T>(
 		},
 		{
 			...initialHistoryState,
-			paused: options?.paused ?? false,
-			present: cloneValue(initialStateRef.current, immutable)
+			paused: optionsRef.current.paused ?? false,
+			present: cloneValue(
+				initialStateRef.current,
+				optionsRef.current.immutable
+			)
 		}
 	);
 
-	const canRedo = size(state.future) !== 0;
-	const canUndo = size(state.past) !== 0;
+	const historyState = useMemo(() => {
+		return {
+			canRedo: size(state.future) !== 0,
+			canUndo: size(state.past) !== 0,
+			future: state.future,
+			past: state.past,
+			paused: state.paused,
+			present: state.present as T
+		};
+	}, [state]);
 
-	const clear = useCallback(() => {
-		return dispatch({
-			initialState: initialStateRef.current,
-			type: 'CLEAR'
-		});
-	}, []);
+	const historyActions = useMemo(() => {
+		const { debounceMs = 250, debounceSettings } = optionsRef.current;
+		const setDebounced = debounce(
+			(newPresent: T) => {
+				return dispatch({ type: 'SET', newPresent });
+			},
+			debounceMs,
+			debounceSettings
+		);
 
-	const pause = useCallback(() => {
-		dispatch({ type: 'PAUSE' });
-	}, []);
-	const redo = useCallback(() => {
-		if (canRedo) {
-			dispatch({ type: 'REDO' });
-		}
-	}, [canRedo]);
-
-	const replace = useCallback((newPresent: T) => {
-		dispatch({ type: 'REPLACE', newPresent });
-	}, []);
-
-	const resume = useCallback(() => {
-		dispatch({ type: 'RESUME' });
-	}, []);
-
-	const setDebounced = useDebounceFn(
-		(newPresent: T) => {
-			return dispatch({ type: 'SET', newPresent });
-		},
-		debounceMs,
-		debounceSettings
-	);
-
-	const setDirect = useCallback((newPresent: T) => {
-		return dispatch({ type: 'SET', newPresent });
-	}, []);
-
-	const set = useCallback(
-		(newPresent: T) => {
-			if (debounceMs) {
-				setDebounced(newPresent);
-			} else {
-				setDirect(newPresent);
+		return {
+			clear: () => {
+				dispatch({
+					type: 'CLEAR',
+					initialState: initialStateRef.current
+				});
+			},
+			pause: () => {
+				dispatch({ type: 'PAUSE' });
+			},
+			redo: () => {
+				dispatch({ type: 'REDO' });
+			},
+			replace: (newPresent: T) => {
+				dispatch({ type: 'REPLACE', newPresent });
+			},
+			resume: () => {
+				dispatch({ type: 'RESUME' });
+			},
+			set: (newPresent: T) => {
+				if (debounceMs) {
+					setDebounced(newPresent);
+				} else {
+					dispatch({ type: 'SET', newPresent });
+				}
+			},
+			setDirect: (newPresent: T) => {
+				dispatch({ type: 'SET', newPresent });
+			},
+			undo: () => {
+				dispatch({ type: 'UNDO' });
 			}
-		},
-		[debounceMs, setDebounced, setDirect]
-	);
+		};
+	}, []);
 
-	const undo = useCallback(() => {
-		if (canUndo) {
-			dispatch({ type: 'UNDO' });
-		}
-	}, [canUndo]);
-
-	// Update the ref when onChange changes
+	// Update the ref when options change
 	useEffect(() => {
-		onChangeRef.current = onChange;
-	}, [onChange]);
+		if (!options) {
+			return;
+		}
 
-	return {
-		canRedo,
-		canUndo,
-		clear,
-		future: state.future,
-		past: state.past,
-		pause,
-		paused: state.paused,
-		redo,
-		replace,
-		resume,
-		set,
-		setDirect,
-		state: state.present as T,
-		undo
-	};
+		optionsRef.current = options;
+	}, [options]);
+
+	return [historyState, historyActions] as const;
 };
 
-export type { DebounceSettings };
+export type { DebounceSettings, HistoryAction, HistoryOptions, HistoryState };
 export default useHistoryState;

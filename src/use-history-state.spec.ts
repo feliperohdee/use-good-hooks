@@ -10,284 +10,351 @@ describe('/use-history-state', () => {
 			return useHistoryState({ count: 0 }, { onChange });
 		});
 
-		expect(onChange).not.toHaveBeenCalled();
-		expect(result.current.canUndo).toEqual(false);
-		expect(result.current.canRedo).toEqual(false);
+		const [state] = result.current;
 
-		expect(result.current.past).toEqual([]);
-		expect(result.current.state).toEqual({ count: 0 });
-		expect(result.current.future).toEqual([]);
+		expect(onChange).not.toHaveBeenCalled();
+		expect(state.canUndo).toEqual(false);
+		expect(state.canRedo).toEqual(false);
+
+		expect(state.past).toEqual([]);
+		expect(state.present).toEqual({ count: 0 });
+		expect(state.future).toEqual([]);
 	});
 
 	it('should update the state and store history', () => {
 		const onChange = vi.fn();
 		const { result } = renderHook(() => {
-			return useHistoryState({ count: 0 }, { onChange });
+			return useHistoryState({ count: 0 }, { onChange, debounceMs: 0 });
 		});
 
+		const [, actions] = result.current;
+
 		act(() => {
-			result.current.set({ count: 1 });
+			actions.set({ count: 1 });
 		});
+
+		const [state] = result.current;
 
 		expect(onChange).toHaveBeenCalledWith({
 			action: 'SET',
 			state: { count: 1 }
 		});
-		expect(result.current.canRedo).toEqual(false);
-		expect(result.current.canUndo).toEqual(true);
+		expect(state.canRedo).toEqual(false);
+		expect(state.canUndo).toEqual(true);
 
-		expect(result.current.past).toEqual([{ count: 0 }]);
-		expect(result.current.state).toEqual({ count: 1 });
-		expect(result.current.future).toEqual([]);
+		expect(state.past).toEqual([{ count: 0 }]);
+		expect(state.present).toEqual({ count: 1 });
+		expect(state.future).toEqual([]);
 	});
 
 	it('should undo changes', () => {
 		const onChange = vi.fn();
 		const { result } = renderHook(() => {
-			return useHistoryState({ count: 0 }, { onChange });
+			return useHistoryState({ count: 0 }, { onChange, debounceMs: 0 });
 		});
 
+		const [, actions] = result.current;
+
 		act(() => {
-			result.current.set({ count: 1 });
-			result.current.set({ count: 2 });
+			actions.set({ count: 1 });
+			actions.set({ count: 2 });
 		});
+
+		let [state] = result.current;
 
 		expect(onChange).toHaveBeenCalledWith({
 			action: 'SET',
 			state: { count: 2 }
 		});
-		expect(result.current.state).toEqual({ count: 2 });
+		expect(state.present).toEqual({ count: 2 });
 
 		act(() => {
-			result.current.undo();
+			actions.undo();
 		});
+
+		[state] = result.current;
 
 		expect(onChange).toHaveBeenCalledWith({
 			action: 'UNDO',
 			state: { count: 1 }
 		});
-		expect(result.current.canUndo).toEqual(true);
-		expect(result.current.canRedo).toEqual(true);
+		expect(state.canUndo).toEqual(true);
+		expect(state.canRedo).toEqual(true);
 
-		expect(result.current.past).toEqual([{ count: 0 }]);
-		expect(result.current.state).toEqual({ count: 1 });
-		expect(result.current.future).toEqual([{ count: 2 }]);
+		expect(state.past).toEqual([{ count: 0 }]);
+		expect(state.present).toEqual({ count: 1 });
+		expect(state.future).toEqual([{ count: 2 }]);
 	});
 
 	it('should redo changes', () => {
 		const onChange = vi.fn();
 		const { result } = renderHook(() => {
-			return useHistoryState({ count: 0 }, { onChange });
+			return useHistoryState({ count: 0 }, { onChange, debounceMs: 0 });
 		});
 
+		const [, actions] = result.current;
+
 		act(() => {
-			result.current.set({ count: 1 });
-			result.current.set({ count: 2 });
+			actions.set({ count: 1 });
+			actions.set({ count: 2 });
 		});
+
+		let [state] = result.current;
 
 		expect(onChange).toHaveBeenCalledWith({
 			action: 'SET',
 			state: { count: 2 }
 		});
 
-		expect(result.current.state).toEqual({ count: 2 });
+		expect(state.present).toEqual({ count: 2 });
 
 		act(() => {
-			result.current.undo();
+			actions.undo();
 		});
+
+		[state] = result.current;
 
 		expect(onChange).toHaveBeenCalledWith({
 			action: 'UNDO',
 			state: { count: 1 }
 		});
-		expect(result.current.state).toEqual({ count: 1 });
+		expect(state.present).toEqual({ count: 1 });
 
 		act(() => {
-			result.current.redo();
+			actions.redo();
 		});
+
+		[state] = result.current;
 
 		expect(onChange).toHaveBeenCalledWith({
 			action: 'REDO',
 			state: { count: 2 }
 		});
-		expect(result.current.canUndo).toEqual(true);
-		expect(result.current.canRedo).toEqual(false);
+		expect(state.canUndo).toEqual(true);
+		expect(state.canRedo).toEqual(false);
 
-		expect(result.current.past).toEqual([{ count: 0 }, { count: 1 }]);
-		expect(result.current.state).toEqual({ count: 2 });
-		expect(result.current.future).toEqual([]);
+		expect(state.past).toEqual([{ count: 0 }, { count: 1 }]);
+		expect(state.present).toEqual({ count: 2 });
+		expect(state.future).toEqual([]);
 	});
 
 	it('should clear history', () => {
 		const onChange = vi.fn();
 		const { result } = renderHook(() => {
-			return useHistoryState({ count: 0 }, { onChange });
+			return useHistoryState({ count: 0 }, { onChange, debounceMs: 0 });
 		});
 
+		const [, actions] = result.current;
+
 		act(() => {
-			result.current.set({ count: 1 });
-			result.current.set({ count: 2 });
-			result.current.clear();
+			actions.set({ count: 1 });
+			actions.set({ count: 2 });
+			actions.clear();
 		});
+
+		const [state] = result.current;
 
 		expect(onChange).toHaveBeenCalledWith({
 			action: 'CLEAR',
 			state: { count: 0 }
 		});
-		expect(result.current.canUndo).toEqual(false);
-		expect(result.current.canRedo).toEqual(false);
+		expect(state.canUndo).toEqual(false);
+		expect(state.canRedo).toEqual(false);
 
-		expect(result.current.past).toEqual([]);
-		expect(result.current.state).toEqual({ count: 0 });
-		expect(result.current.future).toEqual([]);
+		expect(state.past).toEqual([]);
+		expect(state.present).toEqual({ count: 0 });
+		expect(state.future).toEqual([]);
 	});
 
 	it('should replace the state', () => {
 		const { result } = renderHook(() => {
-			return useHistoryState({ count: 0 });
+			return useHistoryState({ count: 0 }, { debounceMs: 0 });
 		});
+
+		const [, actions] = result.current;
 
 		act(() => {
-			result.current.replace({ count: 1 });
+			actions.replace({ count: 1 });
 		});
 
-		expect(result.current.state).toEqual({ count: 1 });
-		expect(result.current.past).toEqual([]);
-		expect(result.current.future).toEqual([]);
+		let [state] = result.current;
+
+		expect(state.present).toEqual({ count: 1 });
+		expect(state.past).toEqual([]);
+		expect(state.future).toEqual([]);
 
 		act(() => {
-			result.current.set({ count: 2 });
+			actions.set({ count: 2 });
 		});
 
-		expect(result.current.state).toEqual({ count: 2 });
-		expect(result.current.past).toEqual([{ count: 1 }]);
-		expect(result.current.future).toEqual([]);
+		[state] = result.current;
+
+		expect(state.present).toEqual({ count: 2 });
+		expect(state.past).toEqual([{ count: 1 }]);
+		expect(state.future).toEqual([]);
 
 		act(() => {
-			result.current.replace({ count: 3 });
+			actions.replace({ count: 3 });
 		});
 
-		expect(result.current.state).toEqual({ count: 3 });
-		expect(result.current.past).toEqual([]);
-		expect(result.current.future).toEqual([]);
+		[state] = result.current;
+
+		expect(state.present).toEqual({ count: 3 });
+		expect(state.past).toEqual([]);
+		expect(state.future).toEqual([]);
 	});
 
 	it('should respect maxCapacity', () => {
 		// Use a maxCapacity of 2
 		const { result } = renderHook(() => {
-			return useHistoryState({ count: 0 }, { maxCapacity: 2 });
+			return useHistoryState(
+				{ count: 0 },
+				{ maxCapacity: 2, debounceMs: 0 }
+			);
 		});
+
+		const [, actions] = result.current;
 
 		// Add 3 states (initial + 3 new ones)
 		act(() => {
-			result.current.set({ count: 1 });
+			actions.set({ count: 1 });
 		});
+
+		let [state] = result.current;
 
 		// We should have 1 past state
-		expect(result.current.past).toEqual([{ count: 0 }]);
+		expect(state.past).toEqual([{ count: 0 }]);
 
 		act(() => {
-			result.current.set({ count: 2 });
+			actions.set({ count: 2 });
 		});
+
+		[state] = result.current;
 
 		// We should now have 2 past states
-		expect(result.current.past).toEqual([{ count: 0 }, { count: 1 }]);
+		expect(state.past).toEqual([{ count: 0 }, { count: 1 }]);
 
 		act(() => {
-			result.current.set({ count: 3 });
+			actions.set({ count: 3 });
 		});
+
+		[state] = result.current;
 
 		// We've exceeded capacity, should drop the oldest state
-		expect(result.current.past).toEqual([{ count: 1 }, { count: 2 }]);
-		expect(result.current.state).toEqual({ count: 3 });
+		expect(state.past).toEqual([{ count: 1 }, { count: 2 }]);
+		expect(state.present).toEqual({ count: 3 });
 
 		act(() => {
-			result.current.set({ count: 4 });
+			actions.set({ count: 4 });
 		});
 
+		[state] = result.current;
+
 		// Should continue to drop the oldest state when adding a new one
-		expect(result.current.past).toEqual([{ count: 2 }, { count: 3 }]);
+		expect(state.past).toEqual([{ count: 2 }, { count: 3 }]);
 	});
 
 	it('should perform deep copies to avoid reference issues', () => {
 		const initialObject = { nested: { value: 0 } };
 		const { result } = renderHook(() => {
-			return useHistoryState(initialObject);
+			return useHistoryState(initialObject, {
+				immutable: false,
+				debounceMs: 0
+			});
 		});
 
+		const [, actions] = result.current;
 		const newObject = { nested: { value: 1 } };
 
 		act(() => {
-			result.current.set(newObject);
+			actions.set(newObject);
 		});
 
 		// Modify the original objects
 		initialObject.nested.value = 100;
 		newObject.nested.value = 200;
 
+		const [state] = result.current;
+
 		// Our state history should not be affected by these changes
-		expect(result.current.past[0]).toEqual({ nested: { value: 0 } });
-		expect(result.current.state).toEqual({ nested: { value: 1 } });
+		expect(state.past[0]).toEqual({ nested: { value: 0 } });
+		expect(state.present).toEqual({ nested: { value: 1 } });
 	});
 
 	it('should not add to history if new value is equal to current', () => {
 		const { result } = renderHook(() => {
-			return useHistoryState({ count: 0 });
+			return useHistoryState({ count: 0 }, { immutable: false });
 		});
+
+		const [, actions] = result.current;
 
 		act(() => {
-			result.current.set({ count: 0 });
+			actions.set({ count: 0 });
 		});
 
-		expect(result.current.canUndo).toEqual(false);
-		expect(result.current.past).toEqual([]);
+		const [state] = result.current;
+
+		expect(state.canUndo).toEqual(false);
+		expect(state.past).toEqual([]);
 	});
 
 	it('should do nothing on undo/redo if not possible', () => {
 		const { result } = renderHook(() => {
-			return useHistoryState({ count: 0 });
+			return useHistoryState({ count: 0 }, { debounceMs: 0 });
 		});
+
+		const [, actions] = result.current;
 
 		// Trying to undo with no history
 		act(() => {
-			result.current.undo();
+			actions.undo();
 		});
 
+		let [state] = result.current;
+
 		// State should remain unchanged
-		expect(result.current.state).toEqual({ count: 0 });
+		expect(state.present).toEqual({ count: 0 });
 
 		// Now let's test redo after a complete undo cycle
 		act(() => {
 			// Add a state entry
-			result.current.set({ count: 1 });
+			actions.set({ count: 1 });
 		});
 
+		[state] = result.current;
+
 		// Verify the state is updated
-		expect(result.current.state).toEqual({ count: 1 });
+		expect(state.present).toEqual({ count: 1 });
 
 		// Undo back to initial state
 		act(() => {
-			result.current.undo();
+			actions.undo();
 		});
 
+		[state] = result.current;
+
 		// Verify we're back to initial state
-		expect(result.current.state).toEqual({ count: 0 });
+		expect(state.present).toEqual({ count: 0 });
 
 		// Do a valid redo
 		act(() => {
-			result.current.redo();
+			actions.redo();
 		});
 
+		[state] = result.current;
+
 		// Back to state { count: 1 }
-		expect(result.current.state).toEqual({ count: 1 });
+		expect(state.present).toEqual({ count: 1 });
 
 		// Try to redo again when there's nothing to redo
 		act(() => {
-			result.current.redo();
+			actions.redo();
 		});
 
+		[state] = result.current;
+
 		// State should remain the same
-		expect(result.current.state).toEqual({ count: 1 });
+		expect(state.present).toEqual({ count: 1 });
 	});
 
 	describe('with timing options', () => {
@@ -304,32 +371,40 @@ describe('/use-history-state', () => {
 				return useHistoryState({ count: 0 }, { debounceMs: 500 });
 			});
 
+			const [, actions] = result.current;
+
 			// Set the value to 1
 			act(() => {
-				result.current.set({ count: 1 });
+				actions.set({ count: 1 });
 			});
 
+			let [state] = result.current;
+
 			// Value should not be updated yet due to debounce
-			expect(result.current.state).toEqual({ count: 0 });
+			expect(state.present).toEqual({ count: 0 });
 
 			// Update again before debounce completes
 			act(() => {
-				result.current.set({ count: 2 });
+				actions.set({ count: 2 });
 			});
 
+			[state] = result.current;
+
 			// Value should still not be updated
-			expect(result.current.state).toEqual({ count: 0 });
+			expect(state.present).toEqual({ count: 0 });
 
 			// Advance time past debounce delay
 			act(() => {
 				vi.advanceTimersByTime(500);
 			});
 
+			[state] = result.current;
+
 			// Only one history entry should exist despite multiple calls
-			expect(result.current.past).toEqual([{ count: 0 }]);
+			expect(state.past).toEqual([{ count: 0 }]);
 
 			// Now value should be updated to the last set value
-			expect(result.current.state).toEqual({ count: 2 });
+			expect(state.present).toEqual({ count: 2 });
 		});
 
 		it('should use setDirect to bypass timing controls', () => {
@@ -337,21 +412,27 @@ describe('/use-history-state', () => {
 				return useHistoryState({ count: 0 }, { debounceMs: 500 });
 			});
 
+			const [, actions] = result.current;
+
 			// Using regular set (should be debounced)
 			act(() => {
-				result.current.set({ count: 1 });
+				actions.set({ count: 1 });
 			});
 
+			let [state] = result.current;
+
 			// Value should not change yet
-			expect(result.current.state).toEqual({ count: 0 });
+			expect(state.present).toEqual({ count: 0 });
 
 			// Using setDirect should bypass debounce
 			act(() => {
-				result.current.setDirect({ count: 2 });
+				actions.setDirect({ count: 2 });
 			});
 
+			[state] = result.current;
+
 			// Value should update immediately with setDirect
-			expect(result.current.state).toEqual({ count: 2 });
+			expect(state.present).toEqual({ count: 2 });
 
 			// The debounced update should still be pending
 			// Advance time to let the debounced update happen
@@ -359,8 +440,10 @@ describe('/use-history-state', () => {
 				vi.advanceTimersByTime(500);
 			});
 
+			[state] = result.current;
+
 			// State should now have the debounced value
-			expect(result.current.state).toEqual({ count: 1 });
+			expect(state.present).toEqual({ count: 1 });
 		});
 	});
 
@@ -370,7 +453,9 @@ describe('/use-history-state', () => {
 				return useHistoryState({ count: 0 });
 			});
 
-			expect(result.current.paused).toBe(false);
+			const [state] = result.current;
+
+			expect(state.paused).toBe(false);
 		});
 
 		it('should pause history tracking', () => {
@@ -378,11 +463,15 @@ describe('/use-history-state', () => {
 				return useHistoryState({ count: 0 });
 			});
 
+			const [, actions] = result.current;
+
 			act(() => {
-				result.current.pause();
+				actions.pause();
 			});
 
-			expect(result.current.paused).toBe(true);
+			const [state] = result.current;
+
+			expect(state.paused).toBe(true);
 		});
 
 		it('should resume history tracking', () => {
@@ -390,103 +479,127 @@ describe('/use-history-state', () => {
 				return useHistoryState({ count: 0 });
 			});
 
+			const [, actions] = result.current;
+
 			act(() => {
-				result.current.pause();
-				result.current.resume();
+				actions.pause();
+				actions.resume();
 			});
 
-			expect(result.current.paused).toBe(false);
+			const [state] = result.current;
+
+			expect(state.paused).toBe(false);
 		});
 
 		it('should not add to history when paused', () => {
 			const { result } = renderHook(() => {
-				return useHistoryState({ count: 0 });
+				return useHistoryState({ count: 0 }, { debounceMs: 0 });
 			});
+
+			const [, actions] = result.current;
 
 			// Add initial state
 			act(() => {
-				result.current.set({ count: 1 });
+				actions.set({ count: 1 });
 			});
 
-			expect(result.current.past).toEqual([{ count: 0 }]);
+			let [state] = result.current;
+
+			expect(state.past).toEqual([{ count: 0 }]);
 
 			// Pause and set new value
 			act(() => {
-				result.current.pause();
-				result.current.set({ count: 2 });
+				actions.pause();
+				actions.set({ count: 2 });
 			});
 
-			expect(result.current.canUndo).toBe(true); // Should still be able to undo to previous state
+			[state] = result.current;
+
+			expect(state.canUndo).toBe(true); // Should still be able to undo to previous state
 
 			// State should update but history should not
-			expect(result.current.past).toEqual([{ count: 0 }]);
-			expect(result.current.state).toEqual({ count: 2 });
+			expect(state.past).toEqual([{ count: 0 }]);
+			expect(state.present).toEqual({ count: 2 });
 		});
 
 		it('should resume adding to history after resuming', () => {
 			const { result } = renderHook(() => {
-				return useHistoryState({ count: 0 });
+				return useHistoryState({ count: 0 }, { debounceMs: 0 });
 			});
+
+			const [, actions] = result.current;
 
 			// Add initial state
 			act(() => {
-				result.current.set({ count: 1 });
+				actions.set({ count: 1 });
 			});
 
 			// Pause, set value, then resume and set again
 			act(() => {
-				result.current.pause();
-				result.current.set({ count: 2 });
-				result.current.resume();
-				result.current.set({ count: 3 });
+				actions.pause();
+				actions.set({ count: 2 });
+				actions.resume();
+				actions.set({ count: 3 });
 			});
 
+			const [state] = result.current;
+
 			// History should include the state before pause and after resume
-			expect(result.current.past).toEqual([{ count: 0 }, { count: 2 }]);
-			expect(result.current.state).toEqual({ count: 3 });
+			expect(state.past).toEqual([{ count: 0 }, { count: 2 }]);
+			expect(state.present).toEqual({ count: 3 });
 		});
 
 		it('should maintain pause state through undo/redo operations', () => {
 			const { result } = renderHook(() => {
-				return useHistoryState({ count: 0 });
+				return useHistoryState({ count: 0 }, { debounceMs: 0 });
 			});
+
+			const [, actions] = result.current;
 
 			// Add some history
 			act(() => {
-				result.current.set({ count: 1 });
-				result.current.set({ count: 2 });
+				actions.set({ count: 1 });
+				actions.set({ count: 2 });
 			});
 
 			// Pause and perform undo/redo
 			act(() => {
-				result.current.pause();
-				result.current.undo();
+				actions.pause();
+				actions.undo();
 			});
 
-			expect(result.current.paused).toBe(true);
-			expect(result.current.state).toEqual({ count: 1 });
+			let [state] = result.current;
+
+			expect(state.paused).toBe(true);
+			expect(state.present).toEqual({ count: 1 });
 
 			act(() => {
-				result.current.redo();
+				actions.redo();
 			});
 
-			expect(result.current.paused).toBe(true);
-			expect(result.current.state).toEqual({ count: 2 });
+			[state] = result.current;
+
+			expect(state.paused).toBe(true);
+			expect(state.present).toEqual({ count: 2 });
 		});
 
 		it('should maintain pause state through clear operation', () => {
 			const { result } = renderHook(() => {
-				return useHistoryState({ count: 0 });
+				return useHistoryState({ count: 0 }, { debounceMs: 0 });
 			});
+
+			const [, actions] = result.current;
 
 			act(() => {
-				result.current.set({ count: 1 });
-				result.current.pause();
-				result.current.clear();
+				actions.set({ count: 1 });
+				actions.pause();
+				actions.clear();
 			});
 
-			expect(result.current.paused).toBe(true);
-			expect(result.current.state).toEqual({ count: 0 });
+			const [state] = result.current;
+
+			expect(state.paused).toBe(true);
+			expect(state.present).toEqual({ count: 0 });
 		});
 	});
 
@@ -494,17 +607,23 @@ describe('/use-history-state', () => {
 		it('should use reference equality for immutable data', () => {
 			const initialData = { count: 0 };
 			const { result } = renderHook(() => {
-				return useHistoryState(initialData, { immutable: true });
+				return useHistoryState(initialData, {
+					immutable: true,
+					debounceMs: 0
+				});
 			});
 
+			const [, actions] = result.current;
 			const newData = { count: 1 };
 
 			act(() => {
-				result.current.set(newData);
+				actions.set(newData);
 			});
 
-			expect(result.current.past[0]).toBe(initialData); // Same reference
-			expect(result.current.state).toBe(newData); // Same reference
+			const [state] = result.current;
+
+			expect(state.past[0]).toBe(initialData); // Same reference
+			expect(state.present).toBe(newData); // Same reference
 		});
 
 		it('should not update when setting same reference for immutable data', () => {
@@ -514,13 +633,17 @@ describe('/use-history-state', () => {
 				return useHistoryState(data, { immutable: true, onChange });
 			});
 
+			const [, actions] = result.current;
+
 			act(() => {
-				result.current.set(data); // Same reference
+				actions.set(data); // Same reference
 			});
 
+			const [state] = result.current;
+
 			expect(onChange).not.toHaveBeenCalled();
-			expect(result.current.canUndo).toBe(false);
-			expect(result.current.past).toEqual([]);
+			expect(state.canUndo).toBe(false);
+			expect(state.past).toEqual([]);
 		});
 
 		it('should update when setting different reference for immutable data', () => {
@@ -528,73 +651,97 @@ describe('/use-history-state', () => {
 			const data2 = { count: 0 }; // Same value, different reference
 			const onChange = vi.fn();
 			const { result } = renderHook(() => {
-				return useHistoryState(data1, { immutable: true, onChange });
+				return useHistoryState(data1, {
+					immutable: true,
+					onChange,
+					debounceMs: 0
+				});
 			});
 
+			const [, actions] = result.current;
+
 			act(() => {
-				result.current.set(data2);
+				actions.set(data2);
 			});
+
+			const [state] = result.current;
 
 			expect(onChange).toHaveBeenCalledWith({
 				action: 'SET',
 				state: data2
 			});
-			expect(result.current.past[0]).toBe(data1);
-			expect(result.current.state).toBe(data2);
+			expect(state.past[0]).toBe(data1);
+			expect(state.present).toBe(data2);
 		});
 
 		it('should work with primitive immutable values', () => {
 			const { result } = renderHook(() => {
-				return useHistoryState(0, { immutable: true });
+				return useHistoryState(0, { immutable: true, debounceMs: 0 });
 			});
+
+			const [, actions] = result.current;
 
 			act(() => {
-				result.current.set(1);
+				actions.set(1);
 			});
 
-			expect(result.current.past[0]).toBe(0);
-			expect(result.current.state).toBe(1);
+			let [state] = result.current;
+
+			expect(state.past[0]).toBe(0);
+			expect(state.present).toBe(1);
 
 			// Setting same value should not update
 			act(() => {
-				result.current.set(1);
+				actions.set(1);
 			});
 
-			expect(result.current.past).toEqual([0]); // No new history entry
+			[state] = result.current;
+
+			expect(state.past).toEqual([0]); // No new history entry
 		});
 
 		it('should perform deep copy when immutable is false (default)', () => {
 			const initialData = { nested: { value: 0 } };
 			const { result } = renderHook(() => {
-				return useHistoryState(initialData);
+				return useHistoryState(initialData, {
+					immutable: false,
+					debounceMs: 0
+				});
 			});
 
+			const [, actions] = result.current;
 			const newData = { nested: { value: 1 } };
 
 			act(() => {
-				result.current.set(newData);
+				actions.set(newData);
 			});
 
-			// Should be deep copies, not same references
-			expect(result.current.past[0]).not.toBe(initialData);
-			expect(result.current.past[0]).toEqual(initialData);
+			const [state] = result.current;
 
-			expect(result.current.state).not.toBe(newData);
-			expect(result.current.state).toEqual(newData);
+			// Should be deep copies, not same references
+			expect(state.past[0]).not.toBe(initialData);
+			expect(state.past[0]).toEqual(initialData);
+
+			expect(state.present).not.toBe(newData);
+			expect(state.present).toEqual(newData);
 		});
 
 		it('should use JSON.stringify for equality when immutable is false', () => {
 			const { result } = renderHook(() => {
-				return useHistoryState({ count: 0 });
+				return useHistoryState({ count: 0 }, { immutable: false });
 			});
+
+			const [, actions] = result.current;
 
 			// Different objects with same content
 			act(() => {
-				result.current.set({ count: 0 });
+				actions.set({ count: 0 });
 			});
 
-			expect(result.current.canUndo).toBe(false);
-			expect(result.current.past).toEqual([]);
+			const [state] = result.current;
+
+			expect(state.canUndo).toBe(false);
+			expect(state.past).toEqual([]);
 		});
 	});
 });

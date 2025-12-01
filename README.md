@@ -210,30 +210,30 @@ Tracks the history of a state value, providing undo and redo capabilities. This 
 import useHistoryState from 'use-good-hooks/use-history-state';
 
 const TextEditor = () => {
-  const {
-    canRedo,
-    canUndo,
-    history,
-    redo,
-    set,
-    state,
-    undo
-  } = useHistoryState('', { maxCapacity: 10 });
+  const [state, actions] = useHistoryState('', {
+    maxCapacity: 10,
+    debounceMs: 0 // Disable debouncing for immediate updates
+  });
 
   return (
     <div>
       <textarea
-        value={state}
-        onChange={(e) => set(e.target.value)}
+        value={state.present}
+        onChange={(e) => actions.set(e.target.value)}
         rows={4}
         cols={50}
       />
       <div>
-        <button onClick={undo} disabled={!canUndo}>Undo</button>
-        <button onClick={redo} disabled={!canRedo}>Redo</button>
+        <button onClick={actions.undo} disabled={!state.canUndo}>
+          Undo
+        </button>
+        <button onClick={actions.redo} disabled={!state.canRedo}>
+          Redo
+        </button>
+        <button onClick={actions.clear}>Clear History</button>
       </div>
-      <p>History (last {history.length} changes):</p>
-      <pre>{JSON.stringify(history, null, 2)}</pre>
+      <p>Past states: {state.past.length}</p>
+      <p>Future states: {state.future.length}</p>
     </div>
   );
 };
@@ -243,27 +243,66 @@ const TextEditor = () => {
 
 - `initialState`: The initial state value
 - `options`: (Optional) Configuration options:
-    - `debounceMs`: Time in milliseconds to debounce the state changes (default: 0)
-    - `debounceSettings`: Debounce settings object (default: { leading: true, trailing: false })
-    - `immutable`: Boolean indicating if the state should be treated as immutable (default: false)
+    - `debounceMs`: Time in milliseconds to debounce the state changes (default: 250)
+    - `debounceSettings`: Debounce settings object from Lodash
+    - `immutable`: Boolean indicating if the state should be treated as immutable (default: true)
     - `maxCapacity`: Maximum number of history entries to keep (default: 10)
-    - `onChange`: Function to call when the state changes
+    - `onChange`: Function to call when the state changes, receives `{ action, state }`
     - `paused`: Boolean indicating if the history is paused (default: false)
 
 #### Returns
 
-- Object with:
-    - `canRedo`: Boolean indicating if redo is possible
-    - `canUndo`: Boolean indicating if undo is possible
-    - `clear`: Function to clear the history
-    - `future`: Array of future states
-    - `past`: Array of past states
-    - `pause`: Function to pause the history
-    - `paused`: Boolean indicating if the history is paused
-    - `redo`: Function to move to the next state (redo)
-    - `set`: Function to update the state and record history
-    - `state`: The current state value
-    - `undo`: Function to move to the previous state (undo)
+Returns a tuple `[historyState, historyActions]`:
+
+**historyState** (Object): - `canRedo`: Boolean indicating if redo is possible - `canUndo`: Boolean indicating if undo is possible - `future`: Array of future states (for redo) - `past`: Array of past states (for undo) - `paused`: Boolean indicating if the history is paused - `present`: The current state value
+
+**historyActions** (Object): - `clear`: Function to clear the history and reset to initial state - `pause`: Function to pause history tracking (updates won't be recorded) - `redo`: Function to move to the next state (redo) - `replace`: Function to replace the state without adding to history - `resume`: Function to resume history tracking - `set`: Function to update the state and record history (debounced by default) - `setDirect`: Function to update the state immediately, bypassing debounce - `undo`: Function to move to the previous state (undo)
+
+#### Example with onChange callback
+
+```typescript
+const Editor = () => {
+  const [state, actions] = useHistoryState('', {
+    onChange: ({ action, state }) => {
+      console.log(`Action: ${action}, State: ${state}`);
+      // Action can be: 'SET', 'UNDO', 'REDO', 'CLEAR', 'REPLACE'
+    }
+  });
+
+  return (
+    <textarea
+      value={state.present}
+      onChange={(e) => actions.set(e.target.value)}
+    />
+  );
+};
+```
+
+#### Example with pause/resume
+
+```typescript
+const Form = () => {
+  const [state, actions] = useHistoryState({ name: '', email: '' });
+
+  const handleBulkUpdate = () => {
+    actions.pause(); // Pause history tracking
+    actions.set({ name: 'John', email: 'john@example.com' });
+    actions.set({ name: 'Jane', email: 'jane@example.com' });
+    actions.resume(); // Resume history tracking
+    // Only the final state will be in history
+  };
+
+  return (
+    <div>
+      <input
+        value={state.present.name}
+        onChange={(e) => actions.set({ ...state.present, name: e.target.value })}
+      />
+      <button onClick={handleBulkUpdate}>Bulk Update</button>
+    </div>
+  );
+};
+```
 
 ### `useDistinct`
 
