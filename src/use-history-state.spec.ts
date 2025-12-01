@@ -138,7 +138,7 @@ describe('/use-history-state', () => {
 		expect(state.future).toEqual([]);
 	});
 
-	it('should clear history', () => {
+	it('should reset to initial state', () => {
 		const onChange = vi.fn();
 		const { result } = renderHook(() => {
 			return useHistoryState({ count: 0 }, { onChange, debounceMs: 0 });
@@ -149,13 +149,13 @@ describe('/use-history-state', () => {
 		act(() => {
 			actions.set({ count: 1 });
 			actions.set({ count: 2 });
-			actions.clear();
+			actions.initial();
 		});
 
 		const [state] = result.current;
 
 		expect(onChange).toHaveBeenCalledWith({
-			action: 'CLEAR',
+			action: 'INITIAL',
 			state: { count: 0 }
 		});
 		expect(state.canUndo).toEqual(false);
@@ -583,7 +583,7 @@ describe('/use-history-state', () => {
 			expect(state.present).toEqual({ count: 2 });
 		});
 
-		it('should maintain pause state through clear operation', () => {
+		it('should maintain pause state through initial operation', () => {
 			const { result } = renderHook(() => {
 				return useHistoryState({ count: 0 }, { debounceMs: 0 });
 			});
@@ -593,7 +593,7 @@ describe('/use-history-state', () => {
 			act(() => {
 				actions.set({ count: 1 });
 				actions.pause();
-				actions.clear();
+				actions.initial();
 			});
 
 			const [state] = result.current;

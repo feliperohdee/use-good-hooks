@@ -5,7 +5,7 @@ import size from 'lodash/size';
 import type { DebounceSettings } from 'lodash';
 
 type HistoryAction<T> =
-	| { type: 'CLEAR'; initialState: T }
+	| { type: 'INITIAL'; initialState: T }
 	| { type: 'PAUSE' }
 	| { type: 'REDO' }
 	| { type: 'REPLACE'; newPresent: T }
@@ -64,7 +64,7 @@ const useHistoryState = <T>(initialState: T, options?: HistoryOptions<T>) => {
 
 			const { future, past, paused, present } = state;
 
-			if (action.type === 'CLEAR') {
+			if (action.type === 'INITIAL') {
 				const newState = {
 					future: [],
 					past: [],
@@ -227,9 +227,9 @@ const useHistoryState = <T>(initialState: T, options?: HistoryOptions<T>) => {
 		);
 
 		return {
-			clear: () => {
+			initial: () => {
 				dispatch({
-					type: 'CLEAR',
+					type: 'INITIAL',
 					initialState: initialStateRef.current
 				});
 			},

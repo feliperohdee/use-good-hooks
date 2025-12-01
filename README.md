@@ -230,7 +230,7 @@ const TextEditor = () => {
         <button onClick={actions.redo} disabled={!state.canRedo}>
           Redo
         </button>
-        <button onClick={actions.clear}>Clear History</button>
+        <button onClick={actions.initial}>Initial State</button>
       </div>
       <p>Past states: {state.past.length}</p>
       <p>Future states: {state.future.length}</p>
@@ -256,7 +256,7 @@ Returns a tuple `[historyState, historyActions]`:
 
 **historyState** (Object): - `canRedo`: Boolean indicating if redo is possible - `canUndo`: Boolean indicating if undo is possible - `future`: Array of future states (for redo) - `past`: Array of past states (for undo) - `paused`: Boolean indicating if the history is paused - `present`: The current state value
 
-**historyActions** (Object): - `clear`: Function to clear the history and reset to initial state - `pause`: Function to pause history tracking (updates won't be recorded) - `redo`: Function to move to the next state (redo) - `replace`: Function to replace the state without adding to history - `resume`: Function to resume history tracking - `set`: Function to update the state and record history (debounced by default) - `setDirect`: Function to update the state immediately, bypassing debounce - `undo`: Function to move to the previous state (undo)
+**historyActions** (Object): - `initial`: Function to reset to initial state - `pause`: Function to pause history tracking (updates won't be recorded) - `redo`: Function to move to the next state (redo) - `replace`: Function to replace the state without adding to history - `resume`: Function to resume history tracking - `set`: Function to update the state and record history (debounced by default) - `setDirect`: Function to update the state immediately, bypassing debounce - `undo`: Function to move to the previous state (undo)
 
 #### Example with onChange callback
 
@@ -265,7 +265,7 @@ const Editor = () => {
   const [state, actions] = useHistoryState('', {
     onChange: ({ action, state }) => {
       console.log(`Action: ${action}, State: ${state}`);
-      // Action can be: 'SET', 'UNDO', 'REDO', 'CLEAR', 'REPLACE'
+      // Action can be: 'SET', 'UNDO', 'REDO', 'INITIAL', 'REPLACE'
     }
   });
 
