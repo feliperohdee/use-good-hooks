@@ -258,7 +258,6 @@ describe('/use-history-state', () => {
 		const initialObject = { nested: { value: 0 } };
 		const { result } = renderHook(() => {
 			return useHistoryState(initialObject, {
-				immutable: false,
 				debounceMs: 0
 			});
 		});
@@ -283,7 +282,7 @@ describe('/use-history-state', () => {
 
 	it('should not add to history if new value is equal to current', () => {
 		const { result } = renderHook(() => {
-			return useHistoryState({ count: 0 }, { immutable: false });
+			return useHistoryState({ count: 0 });
 		});
 
 		const [, actions] = result.current;
@@ -600,148 +599,6 @@ describe('/use-history-state', () => {
 
 			expect(state.paused).toBe(true);
 			expect(state.present).toEqual({ count: 0 });
-		});
-	});
-
-	describe('immutable option', () => {
-		it('should use reference equality for immutable data', () => {
-			const initialData = { count: 0 };
-			const { result } = renderHook(() => {
-				return useHistoryState(initialData, {
-					immutable: true,
-					debounceMs: 0
-				});
-			});
-
-			const [, actions] = result.current;
-			const newData = { count: 1 };
-
-			act(() => {
-				actions.set(newData);
-			});
-
-			const [state] = result.current;
-
-			expect(state.past[0]).toBe(initialData); // Same reference
-			expect(state.present).toBe(newData); // Same reference
-		});
-
-		it('should not update when setting same reference for immutable data', () => {
-			const data = { count: 0 };
-			const onChange = vi.fn();
-			const { result } = renderHook(() => {
-				return useHistoryState(data, { immutable: true, onChange });
-			});
-
-			const [, actions] = result.current;
-
-			act(() => {
-				actions.set(data); // Same reference
-			});
-
-			const [state] = result.current;
-
-			expect(onChange).not.toHaveBeenCalled();
-			expect(state.canUndo).toBe(false);
-			expect(state.past).toEqual([]);
-		});
-
-		it('should update when setting different reference for immutable data', () => {
-			const data1 = { count: 0 };
-			const data2 = { count: 0 }; // Same value, different reference
-			const onChange = vi.fn();
-			const { result } = renderHook(() => {
-				return useHistoryState(data1, {
-					immutable: true,
-					onChange,
-					debounceMs: 0
-				});
-			});
-
-			const [, actions] = result.current;
-
-			act(() => {
-				actions.set(data2);
-			});
-
-			const [state] = result.current;
-
-			expect(onChange).toHaveBeenCalledWith({
-				action: 'SET',
-				state: data2
-			});
-			expect(state.past[0]).toBe(data1);
-			expect(state.present).toBe(data2);
-		});
-
-		it('should work with primitive immutable values', () => {
-			const { result } = renderHook(() => {
-				return useHistoryState(0, { immutable: true, debounceMs: 0 });
-			});
-
-			const [, actions] = result.current;
-
-			act(() => {
-				actions.set(1);
-			});
-
-			let [state] = result.current;
-
-			expect(state.past[0]).toBe(0);
-			expect(state.present).toBe(1);
-
-			// Setting same value should not update
-			act(() => {
-				actions.set(1);
-			});
-
-			[state] = result.current;
-
-			expect(state.past).toEqual([0]); // No new history entry
-		});
-
-		it('should perform deep copy when immutable is false (default)', () => {
-			const initialData = { nested: { value: 0 } };
-			const { result } = renderHook(() => {
-				return useHistoryState(initialData, {
-					immutable: false,
-					debounceMs: 0
-				});
-			});
-
-			const [, actions] = result.current;
-			const newData = { nested: { value: 1 } };
-
-			act(() => {
-				actions.set(newData);
-			});
-
-			const [state] = result.current;
-
-			// Should be deep copies, not same references
-			expect(state.past[0]).not.toBe(initialData);
-			expect(state.past[0]).toEqual(initialData);
-
-			expect(state.present).not.toBe(newData);
-			expect(state.present).toEqual(newData);
-		});
-
-		it('should use JSON.stringify for equality when immutable is false', () => {
-			const { result } = renderHook(() => {
-				return useHistoryState({ count: 0 }, { immutable: false });
-			});
-
-			const [, actions] = result.current;
-
-			// Different objects with same content
-			act(() => {
-				actions.set({ count: 0 });
-			});
-
-			const [state] = result.current;
-
-			expect(state.canUndo).toBe(false);
-			expect(state.past).toEqual([]);
 		});
 	});
 });

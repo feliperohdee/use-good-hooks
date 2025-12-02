@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useReducer, useRef } from 'react';
 import cloneDeep from 'lodash/cloneDeep';
+import isEqual from 'lodash/isEqual';
 import debounce from 'lodash/debounce';
 import size from 'lodash/size';
 import type { DebounceSettings } from 'lodash';
@@ -31,7 +32,6 @@ type HistoryState<T> = {
 type HistoryOptions<T> = {
 	debounceMs?: number;
 	debounceSettings?: DebounceSettings;
-	immutable?: boolean;
 	maxCapacity?: number;
 	onChange?: HistoryOnChange<T>;
 	paused?: boolean;
@@ -43,12 +43,12 @@ const initialHistoryState = {
 	present: null
 };
 
-const cloneValue = <T>(value: T, immutable?: boolean): T => {
-	return immutable ? value : cloneDeep(value);
+const cloneValue = <T>(value: T): T => {
+	return cloneDeep(value);
 };
 
-const valuesEqual = <T>(a: T, b: T, immutable?: boolean): boolean => {
-	return immutable ? a === b : JSON.stringify(a) === JSON.stringify(b);
+const valuesEqual = <T>(a: T, b: T): boolean => {
+	return isEqual(a, b);
 };
 
 const useHistoryState = <T>(initialState: T, options?: HistoryOptions<T>) => {
@@ -56,11 +56,8 @@ const useHistoryState = <T>(initialState: T, options?: HistoryOptions<T>) => {
 	const optionsRef = useRef(options ?? {});
 	const [state, dispatch] = useReducer(
 		(state: HistoryState<T>, action: HistoryAction<T>) => {
-			const {
-				immutable = true,
-				maxCapacity = 10,
-				onChange = () => null
-			} = optionsRef.current;
+			const { maxCapacity = 10, onChange = () => null } =
+				optionsRef.current;
 
 			const { future, past, paused, present } = state;
 
@@ -69,7 +66,7 @@ const useHistoryState = <T>(initialState: T, options?: HistoryOptions<T>) => {
 					future: [],
 					past: [],
 					paused,
-					present: cloneValue(action.initialState, immutable)
+					present: cloneValue(action.initialState)
 				};
 
 				onChange({
@@ -92,9 +89,9 @@ const useHistoryState = <T>(initialState: T, options?: HistoryOptions<T>) => {
 				const newFuture = future.slice(1);
 				const newState = {
 					future: newFuture,
-					past: [...past, cloneValue(present as T, immutable)],
+					past: [...past, cloneValue(present as T)],
 					paused,
-					present: cloneValue(next, immutable)
+					present: cloneValue(next)
 				};
 
 				onChange({
@@ -127,7 +124,7 @@ const useHistoryState = <T>(initialState: T, options?: HistoryOptions<T>) => {
 				const { newPresent } = action;
 
 				// Avoid unnecessary updates if values are equal
-				if (valuesEqual(newPresent, present, immutable)) {
+				if (valuesEqual(newPresent, present)) {
 					return state;
 				}
 
@@ -135,7 +132,7 @@ const useHistoryState = <T>(initialState: T, options?: HistoryOptions<T>) => {
 				if (paused) {
 					const newState = {
 						...state,
-						present: cloneValue(newPresent, immutable)
+						present: cloneValue(newPresent)
 					};
 
 					onChange({
@@ -150,7 +147,7 @@ const useHistoryState = <T>(initialState: T, options?: HistoryOptions<T>) => {
 				let newPast = [...past];
 
 				if (present !== null) {
-					newPast = [...newPast, cloneValue(present, immutable)];
+					newPast = [...newPast, cloneValue(present)];
 				}
 
 				// Remove oldest entries if max capacity is reached
@@ -162,7 +159,7 @@ const useHistoryState = <T>(initialState: T, options?: HistoryOptions<T>) => {
 					future: [],
 					past: newPast,
 					paused,
-					present: cloneValue(newPresent, immutable)
+					present: cloneValue(newPresent)
 				};
 
 				onChange({
@@ -179,10 +176,10 @@ const useHistoryState = <T>(initialState: T, options?: HistoryOptions<T>) => {
 				const previous = past[size(past) - 1];
 				const newPast = past.slice(0, size(past) - 1);
 				const newState = {
-					future: [cloneValue(present as T, immutable), ...future],
+					future: [cloneValue(present as T), ...future],
 					past: newPast,
 					paused,
-					present: cloneValue(previous, immutable)
+					present: cloneValue(previous)
 				};
 
 				onChange({
@@ -198,10 +195,7 @@ const useHistoryState = <T>(initialState: T, options?: HistoryOptions<T>) => {
 		{
 			...initialHistoryState,
 			paused: optionsRef.current.paused ?? false,
-			present: cloneValue(
-				initialStateRef.current,
-				optionsRef.current.immutable
-			)
+			present: cloneValue(initialStateRef.current)
 		}
 	);
 

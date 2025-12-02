@@ -245,7 +245,6 @@ const TextEditor = () => {
 - `options`: (Optional) Configuration options:
     - `debounceMs`: Time in milliseconds to debounce the state changes (default: 250)
     - `debounceSettings`: Debounce settings object from Lodash
-    - `immutable`: Boolean indicating if the state should be treated as immutable (default: true)
     - `maxCapacity`: Maximum number of history entries to keep (default: 10)
     - `onChange`: Function to call when the state changes, receives `{ action, state }`
     - `paused`: Boolean indicating if the history is paused (default: false)
