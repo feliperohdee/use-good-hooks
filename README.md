@@ -608,6 +608,28 @@ const DelayedComponent = () => {
 - `setLate`: A function to update the state after the specified delay. It can also accept a second boolean argument to update the state immediately.
 - `cancel`: A function to cancel a pending state update.
 
+### `useUnmount`
+
+Runs a callback when the component unmounts for real. React's Strict Mode simulates an unmount right after mount (cleanup, then setup again on the same instance); a plain `useEffect` cleanup fires there too, which aborts in-flight requests or tears down subscriptions that the remount never rebuilds. `useUnmount` defers the callback by one microtask and cancels it if the effect is set up again, so only the real unmount reaches it. The latest callback is always the one called.
+
+```typescript
+import useUnmount from 'use-good-hooks/use-unmount';
+
+const Subscriber = ({ channel }) => {
+  const controller = useRef(new AbortController());
+
+  useUnmount(() => {
+    controller.current.abort();
+  });
+
+  return <p>Listening to {channel}</p>;
+};
+```
+
+#### Parameters
+
+- `fn`: The callback to run on unmount. It is called once, one microtask after the real unmount, and never on a Strict Mode remount.
+
 ## 🧪 Running Tests
 
 This library is thoroughly tested with Vitest and React Testing Library. To run the tests:

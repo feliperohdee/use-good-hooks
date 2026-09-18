@@ -17,6 +17,7 @@ export default defineConfig(env => {
 		'./src/use-temporary-state.ts',
 		'./src/use-throttle-fn.ts',
 		'./src/use-throttle.ts',
+		'./src/use-unmount.ts',
 		'./src/use-url-state.ts'
 	];
 
